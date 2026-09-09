@@ -370,6 +370,79 @@ runs:
           -Label 'Microsoft Edge WebView2'
 
     # ============================================================
+    # POSTGRESQL / EDB SPECIAL SILENT UNINSTALLER
+    #
+    # PostgreSQL for Windows uses InstallBuilder's uninstaller.
+    # If launched normally it can open a GUI, which is unacceptable
+    # on a remote GitHub runner. Always force unattended/no-UI mode.
+    # ============================================================
+
+    - name: Remove PostgreSQL silently
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $uninstallers = @()
+
+        # Standard EDB installation locations.
+        $roots = @(
+          'C:\Program Files\PostgreSQL',
+          'C:\Program Files (x86)\PostgreSQL',
+          'C:\PostgreSQL'
+        )
+
+        foreach ($root in $roots) {
+          if (-not (Test-Path -LiteralPath $root)) {
+            continue
+          }
+
+          $uninstallers += Get-ChildItem -LiteralPath $root -Recurse -File -Force -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -ieq 'uninstall-postgresql.exe' } |
+            Select-Object -ExpandProperty FullName
+        }
+
+        $uninstallers = $uninstallers | Sort-Object -Unique
+
+        if ($uninstallers.Count -eq 0) {
+          Write-Host '[POSTGRESQL] No EDB uninstall-postgresql.exe found'
+        }
+        else {
+          foreach ($exe in $uninstallers) {
+            Write-Host ''
+            Write-Host '============================================================'
+            Write-Host '[POSTGRESQL SILENT UNINSTALL]'
+            Write-Host "  EXE: $exe"
+            Write-Host '============================================================'
+
+            try {
+              $p = Start-Process `
+                -FilePath $exe `
+                -ArgumentList @(
+                  '--mode', 'unattended',
+                  '--unattendedmodeui', 'none'
+                ) `
+                -Wait `
+                -PassThru `
+                -NoNewWindow
+
+              Write-Host "[POSTGRESQL EXIT CODE] $($p.ExitCode)"
+
+              if ($p.ExitCode -eq 0 -or $p.ExitCode -eq 3010) {
+                Write-Host '[POSTGRESQL] Silent uninstall completed'
+              }
+              else {
+                Write-Warning "[POSTGRESQL] Uninstaller returned exit code $($p.ExitCode)"
+              }
+            }
+            catch {
+              Write-Warning "[POSTGRESQL] Failed to run $exe"
+              Write-Warning $_
+            }
+          }
+        }
+
+    # ============================================================
     # OLD REGISTRY UNINSTALL METHOD
     #
     # This intentionally stays after Chocolatey.
@@ -497,6 +570,43 @@ runs:
 
           if ([string]::IsNullOrWhiteSpace($exe)) {
             return $false
+          }
+
+          # PostgreSQL / EDB InstallBuilder.
+          # Never launch its GUI on a runner.
+          if (
+            $Name -match '(?i)PostgreSQL|EDB Postgres|Postgres' -and
+            $exe -match '(?i)(^|\\)uninstall-postgresql\.exe$'
+          ) {
+            $argumentList = @(
+              '--mode', 'unattended',
+              '--unattendedmodeui', 'none'
+            )
+
+            Write-Host "[POSTGRESQL SILENT UNINSTALL] $Name"
+            Write-Host "  EXE: $exe"
+            Write-Host '  ARGS: --mode unattended --unattendedmodeui none'
+
+            try {
+              $p = Start-Process `
+                -FilePath $exe `
+                -ArgumentList $argumentList `
+                -Wait `
+                -PassThru `
+                -NoNewWindow
+
+              return (
+                $p.ExitCode -eq 0 -or
+                $p.ExitCode -eq 1605 -or
+                $p.ExitCode -eq 1614 -or
+                $p.ExitCode -eq 3010
+              )
+            }
+            catch {
+              Write-Warning "[POSTGRESQL UNINSTALL ERROR] $Name"
+              Write-Warning $_
+              return $false
+            }
           }
 
           # Inno Setup
