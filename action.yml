@@ -1,4 +1,4 @@
-name: Windows Debloater
+name: Windows Debloat & Cleanup
 description: Aggressive Windows runner cleanup with selected development tools preserved
 author: Veniamin668
 
@@ -8,12 +8,12 @@ branding:
 
 inputs:
   enable:
-    description: Enable Windows runner debloating
+    description: Enable cleanup
     required: false
     default: 'true'
 
   remove_services:
-    description: Stop and remove unwanted Windows services
+    description: Stop and remove unwanted services
     required: false
     default: 'true'
 
@@ -22,33 +22,15 @@ runs:
   steps:
 
     # ============================================================
-    # CHECK
-    # ============================================================
-
-    - name: Check settings
-      if: inputs.enable == 'true'
-      shell: pwsh
-      run: |
-        Write-Host "============================================================"
-        Write-Host " WINDOWS DEBLOATER"
-        Write-Host "============================================================"
-        Write-Host "[ENABLE]          $env:ENABLE"
-        Write-Host "[REMOVE SERVICES] $env:REMOVE_SERVICES"
-        Write-Host ""
-
-      env:
-        ENABLE: ${{ inputs.enable }}
-        REMOVE_SERVICES: ${{ inputs.remove_services }}
-
-
-    # ============================================================
-    # STOP UNWANTED SERVICES
+    # STOP KNOWN UNWANTED SERVICES
     # ============================================================
 
     - name: Stop unwanted services
-      if: inputs.enable == 'true' && inputs.remove_services == 'true'
+      if: ${{ inputs.enable == 'true' && inputs.remove_services == 'true' }}
       shell: pwsh
       run: |
+        $ErrorActionPreference = 'Continue'
+
         $services = @(
           'postgresql-x64-17',
           'PostgreSQL',
@@ -65,39 +47,30 @@ runs:
           'ZTHELPER'
         )
 
-        Write-Host "============================================================"
-        Write-Host " STOPPING UNWANTED SERVICES"
-        Write-Host "============================================================"
+        foreach ($name in $services) {
+          $service = Get-Service -Name $name -ErrorAction SilentlyContinue
 
-        foreach ($serviceName in $services) {
-          try {
-            $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
-
-            if ($null -eq $service) {
-              continue
+          if ($null -ne $service) {
+            Write-Host "[STOP] $name"
+            try {
+              Stop-Service -Name $name -Force -ErrorAction SilentlyContinue
             }
-
-            Write-Host "[SERVICE] $serviceName - $($service.Status)"
-
-            if ($service.Status -ne 'Stopped') {
-              Stop-Service -Name $serviceName -Force -ErrorAction SilentlyContinue
-              Write-Host "[STOPPED] $serviceName"
+            catch {
+              Write-Warning "Failed to stop service: $name"
             }
-          }
-          catch {
-            Write-Host "[WARN] Failed to stop $serviceName : $($_.Exception.Message)"
           }
         }
-
 
     # ============================================================
     # STOP UNWANTED PROCESSES
     # ============================================================
 
     - name: Stop unwanted processes
-      if: inputs.enable == 'true'
+      if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
+        $ErrorActionPreference = 'Continue'
+
         $processes = @(
           'postgres',
           'postgresql',
@@ -118,75 +91,43 @@ runs:
           'dotnet'
         )
 
-        Write-Host "============================================================"
-        Write-Host " STOPPING UNWANTED PROCESSES"
-        Write-Host "============================================================"
-
         foreach ($name in $processes) {
-          try {
-            $running = Get-Process -Name $name -ErrorAction SilentlyContinue
-
-            if ($running) {
-              Write-Host "[PROCESS] Stopping $name"
-
-              $running | Stop-Process -Force -ErrorAction SilentlyContinue
-
-              Write-Host "[STOPPED] $name"
-            }
-          }
-          catch {
-            Write-Host "[WARN] Failed to stop $name : $($_.Exception.Message)"
-          }
+          Get-Process -Name $name -ErrorAction SilentlyContinue |
+            Stop-Process -Force -ErrorAction SilentlyContinue
         }
 
-
     # ============================================================
-    # CHOCOLATEY CLEANUP
+    # CHOCOLATEY ALLOWLIST CLEANUP
+    #
+    # Chocolatey handles the large package set first.
+    # Registry cleanup below remains as a second pass for software
+    # not controlled by Chocolatey or packages with broken metadata.
     # ============================================================
 
-    - name: Remove unwanted Chocolatey packages
-      if: inputs.enable == 'true'
+    - name: Remove Chocolatey packages except allowlist
+      if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
-
         $ErrorActionPreference = 'Continue'
 
-        Write-Host ""
-        Write-Host "============================================================"
-        Write-Host " CHOCOLATEY PACKAGE CLEANUP"
-        Write-Host "============================================================"
-
-        $choco = Get-Command choco.exe -ErrorAction SilentlyContinue
-
-        if ($null -eq $choco) {
-          Write-Host "[INFO] Chocolatey is not installed."
-          exit 0
-        }
-
-        Write-Host "[CHOCO] $($choco.Source)"
-        Write-Host ""
-
-        # --------------------------------------------------------
-        # CHOCOLATEY ALLOWLIST
-        # --------------------------------------------------------
-
         $allowPatterns = @(
-
           # Firefox
           '^firefox($|-)',
+          '^mozilla-maintenance-service($|-)',
 
           # 7-Zip
           '^7zip($|-)',
 
           # CMake
-          '^cmake($|-)',
+          '^cmake($|[-.])',
 
-          # Visual Studio and all VS components/workloads
+          # Visual Studio and components
           '^visualstudio',
           '^visual-studio',
           '^vs-',
+          '^vswhere($|-)',
 
-          # Git / Git for Windows / Git Credential Manager
+          # Git
           '^git($|-)',
           '^git-for-windows($|-)',
           '^git-credential-manager($|-)',
@@ -204,8 +145,10 @@ runs:
           '^docker-desktop($|-)',
           '^docker-cli($|-)',
           '^docker-compose($|-)',
+          '^docker-ce($|-)',
+          '^docker-engine($|-)',
 
-          # WSL and distributions
+          # WSL / distributions
           '^wsl($|-)',
           '^wsl2($|-)',
           '^ubuntu($|-)',
@@ -235,12 +178,10 @@ runs:
         )
 
         function Test-ChocoAllowlist {
-          param(
-            [string]$PackageId
-          )
+          param([string]$Id)
 
           foreach ($pattern in $allowPatterns) {
-            if ($PackageId -match $pattern) {
+            if ($Id -match $pattern) {
               return $true
             }
           }
@@ -248,330 +189,238 @@ runs:
           return $false
         }
 
+        if (-not (Get-Command choco.exe -ErrorAction SilentlyContinue)) {
+          Write-Warning "[CHOCO] choco.exe not found - skipping Chocolatey pass"
+          exit 0
+        }
 
-        # --------------------------------------------------------
-        # GET INSTALLED PACKAGES
-        # --------------------------------------------------------
-
-        Write-Host "[CHOCO] Reading installed packages..."
         Write-Host ""
+        Write-Host "============================================================"
+        Write-Host "CHOCOLATEY INSTALLED PACKAGES"
+        Write-Host "============================================================"
 
         $lines = @(
-          & choco.exe list --local-only --limit-output 2>$null
+          choco list --local-only --limit-output 2>$null
         )
 
         $packages = @()
 
         foreach ($line in $lines) {
-
           if ([string]::IsNullOrWhiteSpace($line)) {
             continue
           }
 
-          if ($line -notmatch '^([^|]+)\|(.+)$') {
+          # Chocolatey --limit-output format: packageId|version
+          $parts = $line -split '\|', 2
+
+          if ($parts.Count -lt 1) {
             continue
           }
 
-          $id = $Matches[1].Trim()
-          $version = $Matches[2].Trim()
+          $id = $parts[0].Trim()
+          $version = if ($parts.Count -gt 1) { $parts[1].Trim() } else { '' }
 
           if ([string]::IsNullOrWhiteSpace($id)) {
             continue
           }
 
+          # Ignore Chocolatey's informational/header lines.
+          if ($id -match '^(Chocolatey|packages installed|package name|local packages)$') {
+            continue
+          }
+
           $packages += [PSCustomObject]@{
-            Id      = $id
+            Id = $id
             Version = $version
           }
         }
 
-        if ($packages.Count -eq 0) {
-          Write-Host "[INFO] No Chocolatey packages detected."
-          exit 0
-        }
+        Write-Host "Found Chocolatey packages: $($packages.Count)"
 
-        Write-Host "[CHOCO] Installed packages: $($packages.Count)"
-        Write-Host ""
+        $removed = 0
+        $kept = 0
+        $failed = 0
 
-
-        # --------------------------------------------------------
-        # PRINT FULL PACKAGE LIST
-        # --------------------------------------------------------
-
-        Write-Host "---------------- INSTALLED CHOCOLATEY PACKAGES ----------------"
-
-        foreach ($package in $packages) {
-
-          if (Test-ChocoAllowlist $package.Id) {
-            Write-Host "[KEEP]   $($package.Id) $($package.Version)"
+        foreach ($pkg in $packages) {
+          if (Test-ChocoAllowlist -Id $pkg.Id) {
+            Write-Host "[CHOCO KEEP] $($pkg.Id) $($pkg.Version)"
+            $kept++
+            continue
           }
-          else {
-            Write-Host "[REMOVE] $($package.Id) $($package.Version)"
-          }
-        }
-
-        Write-Host "---------------------------------------------------------------"
-        Write-Host ""
-
-
-        # --------------------------------------------------------
-        # REMOVE PACKAGES ONE BY ONE
-        # --------------------------------------------------------
-
-        $remove = @(
-          $packages |
-            Where-Object {
-              -not (Test-ChocoAllowlist $_.Id)
-            }
-        )
-
-        Write-Host "[CHOCO] Packages to remove: $($remove.Count)"
-        Write-Host ""
-
-        foreach ($package in $remove) {
 
           Write-Host ""
           Write-Host "============================================================"
-          Write-Host "[CHOCO REMOVE] $($package.Id) $($package.Version)"
+          Write-Host "[CHOCO REMOVE] $($pkg.Id) $($pkg.Version)"
           Write-Host "============================================================"
 
-          try {
+          & choco uninstall $pkg.Id -y --force --no-progress
+          $exitCode = $LASTEXITCODE
 
-            & choco.exe uninstall $package.Id `
-              -y `
-              --force `
-              --no-progress
+          Write-Host "[EXIT CODE] $exitCode"
 
-            $exitCode = $LASTEXITCODE
+          # Chocolatey packages occasionally report a lifecycle-script
+          # warning/non-zero code even though the package is actually gone.
+          $stillInstalled = @(
+            choco list --local-only --limit-output 2>$null |
+              Where-Object {
+                $_ -match ("(?i)^" + [regex]::Escape($pkg.Id) + "\|")
+              }
+          )
 
-            Write-Host "[EXIT CODE] $exitCode"
-
+          if ($stillInstalled.Count -eq 0) {
             if ($exitCode -eq 0) {
-              Write-Host "[REMOVED] $($package.Id)"
+              Write-Host "[REMOVED] $($pkg.Id)"
             }
             else {
-              Write-Host "[FAIL] Chocolatey failed to remove $($package.Id)"
+              Write-Warning "[REMOVED WITH WARNING] $($pkg.Id) - Chocolatey exit code $exitCode, package is no longer installed"
             }
 
+            $removed++
           }
-          catch {
-
-            Write-Host "[FAIL] Exception while removing $($package.Id)"
-            Write-Host "[ERROR] $($_.Exception.Message)"
+          else {
+            Write-Warning "[FAIL] Chocolatey failed to remove $($pkg.Id)"
+            $failed++
           }
         }
 
         Write-Host ""
         Write-Host "============================================================"
-        Write-Host " CHOCOLATEY CLEANUP FINISHED"
+        Write-Host "CHOCOLATEY SUMMARY"
+        Write-Host "============================================================"
+        Write-Host "Removed : $removed"
+        Write-Host "Kept    : $kept"
+        Write-Host "Failed  : $failed"
         Write-Host "============================================================"
 
-
     # ============================================================
-    # EDGE / WEBVIEW2 SPECIAL REMOVAL
+    # EDGE / EDGE WEBVIEW2 SPECIAL UNINSTALLERS
     # ============================================================
 
     - name: Remove Microsoft Edge and WebView2
-      if: inputs.enable == 'true'
+      if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
-
-        Write-Host "============================================================"
-        Write-Host " MICROSOFT EDGE / WEBVIEW2 CLEANUP"
-        Write-Host "============================================================"
-
-        $setupPaths = @()
-
-        $edgeRoots = @(
-          'C:\Program Files (x86)\Microsoft\Edge\Application',
-          'C:\Program Files\Microsoft\Edge\Application'
-        )
-
-        foreach ($root in $edgeRoots) {
-
-          if (-not (Test-Path -LiteralPath $root)) {
-            continue
-          }
-
-          Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue |
-            ForEach-Object {
-
-              $installer = Join-Path $_.FullName 'Installer\setup.exe'
-
-              if (Test-Path -LiteralPath $installer) {
-                $setupPaths += $installer
-              }
-            }
-        }
-
-        $setupPaths = $setupPaths | Select-Object -Unique
-
-        foreach ($setup in $setupPaths) {
-
-          Write-Host ""
-          Write-Host "[EDGE] Found:"
-          Write-Host "       $setup"
-
-          try {
-
-            $process = Start-Process `
-              -FilePath $setup `
-              -ArgumentList @(
-                '--uninstall',
-                '--system-level',
-                '--force-uninstall'
-              ) `
-              -Wait `
-              -PassThru `
-              -NoNewWindow `
-              -ErrorAction Stop
-
-            Write-Host "[EDGE] Exit code: $($process.ExitCode)"
-
-          }
-          catch {
-
-            Write-Host "[WARN] Edge uninstall failed:"
-            Write-Host "       $($_.Exception.Message)"
-          }
-        }
-
-
-        # --------------------------------------------------------
-        # WEBVIEW2
-        # --------------------------------------------------------
-
-        $webviewRoots = @(
-          'C:\Program Files (x86)\Microsoft\EdgeWebView\Application',
-          'C:\Program Files\Microsoft\EdgeWebView\Application'
-        )
-
-        foreach ($root in $webviewRoots) {
-
-          if (-not (Test-Path -LiteralPath $root)) {
-            continue
-          }
-
-          Get-ChildItem -LiteralPath $root -Directory -ErrorAction SilentlyContinue |
-            ForEach-Object {
-
-              $installer = Join-Path $_.FullName 'Installer\setup.exe'
-
-              if (Test-Path -LiteralPath $installer) {
-
-                Write-Host ""
-                Write-Host "[WEBVIEW2] Found:"
-                Write-Host "           $installer"
-
-                try {
-
-                  $process = Start-Process `
-                    -FilePath $installer `
-                    -ArgumentList @(
-                      '--uninstall',
-                      '--msedgewebview',
-                      '--system-level',
-                      '--force-uninstall'
-                    ) `
-                    -Wait `
-                    -PassThru `
-                    -NoNewWindow `
-                    -ErrorAction Stop
-
-                  Write-Host "[WEBVIEW2] Exit code: $($process.ExitCode)"
-
-                }
-                catch {
-
-                  Write-Host "[WARN] WebView2 uninstall failed:"
-                  Write-Host "       $($_.Exception.Message)"
-                }
-              }
-            }
-        }
-
-
-    # ============================================================
-    # REGISTRY SOFTWARE DISCOVERY
-    # ============================================================
-
-    - name: Remove remaining software from registry
-      if: inputs.enable == 'true'
-      shell: pwsh
-      run: |
-
         $ErrorActionPreference = 'Continue'
 
-        Write-Host ""
-        Write-Host "============================================================"
-        Write-Host " REGISTRY SOFTWARE CLEANUP"
-        Write-Host "============================================================"
+        function Invoke-EdgeSetupUninstaller {
+          param(
+            [string[]]$Roots,
+            [string[]]$Arguments,
+            [string]$Label
+          )
 
-        $registryPaths = @(
-          'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
-          'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
-          'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
-          'HKCU:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
-        )
+          $setups = @()
 
-        $apps = @()
-
-        foreach ($path in $registryPaths) {
-
-          try {
-
-            $items = Get-ItemProperty $path -ErrorAction SilentlyContinue
-
-            foreach ($item in $items) {
-
-              if ([string]::IsNullOrWhiteSpace($item.DisplayName)) {
-                continue
-              }
-
-              $apps += $item
+          foreach ($root in $Roots) {
+            if (Test-Path -LiteralPath $root) {
+              $setups += Get-ChildItem -LiteralPath $root -Directory -Force -ErrorAction SilentlyContinue |
+                ForEach-Object {
+                  Join-Path $_.FullName 'Installer\setup.exe'
+                }
             }
-
           }
-          catch {
 
-            Write-Host "[WARN] Registry scan failed: $path"
+          $setups = $setups |
+            Where-Object { Test-Path -LiteralPath $_ } |
+            Sort-Object -Unique
+
+          foreach ($setup in $setups) {
+            Write-Host "[EDGE UNINSTALL] $Label"
+            Write-Host "  $setup"
+
+            try {
+              $p = Start-Process `
+                -FilePath $setup `
+                -ArgumentList $Arguments `
+                -Wait `
+                -PassThru `
+                -NoNewWindow
+
+              Write-Host "[EDGE EXIT CODE] $($p.ExitCode)"
+            }
+            catch {
+              Write-Warning "Failed to run $Label uninstaller: $setup"
+            }
           }
         }
 
-        $apps = $apps |
-          Sort-Object DisplayName, PSPath -Unique
+        Invoke-EdgeSetupUninstaller `
+          -Roots @(
+            'C:\Program Files (x86)\Microsoft\Edge\Application',
+            'C:\Program Files\Microsoft\Edge\Application'
+          ) `
+          -Arguments @(
+            '--uninstall',
+            '--system-level',
+            '--force-uninstall'
+          ) `
+          -Label 'Microsoft Edge'
 
-        Write-Host "[REGISTRY] Installed entries: $($apps.Count)"
-        Write-Host ""
+        Invoke-EdgeSetupUninstaller `
+          -Roots @(
+            'C:\Program Files (x86)\Microsoft\EdgeWebView\Application',
+            'C:\Program Files\Microsoft\EdgeWebView\Application'
+          ) `
+          -Arguments @(
+            '--uninstall',
+            '--msedgewebview',
+            '--system-level',
+            '--force-uninstall'
+          ) `
+          -Label 'Microsoft Edge WebView2'
 
+    # ============================================================
+    # OLD REGISTRY UNINSTALL METHOD
+    #
+    # This intentionally stays after Chocolatey.
+    # It catches ordinary registry uninstallers and software that
+    # Chocolatey did not manage.
+    # ============================================================
 
-        # --------------------------------------------------------
-        # REGISTRY ALLOWLIST
-        # --------------------------------------------------------
+    - name: Remove everything except allowlist (registry pass)
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
 
         $allowDisplayPatterns = @(
-
+          # Firefox + its maintenance service
           '^Mozilla Firefox',
+          '^Firefox',
+          '^Mozilla Maintenance Service',
 
+          # Visual Studio
           '^Visual Studio',
           '^Microsoft Visual Studio',
           '^Visual Studio Installer',
+          '^VS Installer',
+          '^vs_',
+          '^sptools_Microsoft\.VisualStudio',
+          '^Microsoft Visual Studio Setup',
 
+          # Git
           '^Git$',
           '^Git for Windows',
           '^Git Credential Manager',
           '^Git LFS',
 
+          # GitHub CLI
           '^GitHub CLI',
+          '^GitHub Command Line Interface',
 
+          # 7-Zip
           '^7-Zip',
 
+          # CMake
           '^CMake',
 
+          # Tailscale
           '^Tailscale',
 
+          # Docker
           '^Docker',
 
+          # WSL
           '^Windows Subsystem for Linux',
           '^WSL',
           '^Ubuntu',
@@ -581,28 +430,27 @@ runs:
           '^openSUSE',
           '^SUSE',
 
+          # Kubernetes
           '^Kubernetes',
           '^kubectl',
           '^Minikube',
           '^kind',
 
+          # Node.js
           '^Node\.js',
           '^NodeJS',
           '^npm',
           '^npx',
 
+          # PowerShell
           '^PowerShell'
         )
 
-
-        function Test-RegistryAllowlist {
-          param(
-            [string]$Name
-          )
+        function Test-DisplayAllowlist {
+          param([string]$Name)
 
           foreach ($pattern in $allowDisplayPatterns) {
-
-            if ($Name -match $pattern) {
+            if ($Name -match "(?i)$pattern") {
               return $true
             }
           }
@@ -610,600 +458,223 @@ runs:
           return $false
         }
 
-
-        # --------------------------------------------------------
-        # UNIVERSAL UNINSTALLER HELPERS
-        # --------------------------------------------------------
-
-        function Split-ExecutableCommand {
+        function Invoke-UninstallCommand {
           param(
-            [string]$Command
+            [string]$Command,
+            [string]$Name
           )
 
           if ([string]::IsNullOrWhiteSpace($Command)) {
-            return $null
+            return $false
           }
 
-          $Command = $Command.Trim()
+          $command = $Command.Trim()
 
+          # Handle .bat/.cmd without breaking paths containing spaces.
+          if ($command -match '(?i)\.(bat|cmd)(?:\s|$)') {
+            $p = Start-Process `
+              -FilePath 'cmd.exe' `
+              -ArgumentList @('/d', '/s', '/c', "call $command") `
+              -Wait `
+              -PassThru `
+              -NoNewWindow
+
+            return ($p.ExitCode -eq 0 -or $p.ExitCode -eq 3010)
+          }
+
+          # Parse quoted executable path correctly.
           $exe = $null
-          $arguments = ''
+          $args = $null
 
-          if ($Command.StartsWith('"')) {
-
-            $endQuote = $Command.IndexOf('"', 1)
-
-            if ($endQuote -gt 0) {
-
-              $exe = $Command.Substring(
-                1,
-                $endQuote - 1
-              )
-
-              if ($Command.Length -gt ($endQuote + 1)) {
-
-                $arguments = $Command.Substring(
-                  $endQuote + 1
-                ).Trim()
-              }
-            }
+          if ($command -match '^\s*"([^"]+)"\s*(.*)$') {
+            $exe = $matches[1]
+            $args = $matches[2]
           }
-          else {
-
-            if ($Command -match '^(.*?\.exe)(?:\s+(.*))?$') {
-
-              $exe = $Matches[1]
-
-              if ($Matches[2]) {
-                $arguments = $Matches[2].Trim()
-              }
-            }
+          elseif ($command -match '^\s*([^\s]+)\s*(.*)$') {
+            $exe = $matches[1]
+            $args = $matches[2]
           }
 
           if ([string]::IsNullOrWhiteSpace($exe)) {
-            return $null
-          }
-
-          [PSCustomObject]@{
-            FilePath  = $exe
-            Arguments = $arguments
-          }
-        }
-
-
-        function Invoke-ExeUninstaller {
-          param(
-            [string]$Command,
-            [string]$DisplayName
-          )
-
-          $parsed = Split-ExecutableCommand -Command $Command
-
-          if ($null -eq $parsed) {
-
-            Write-Host "[WARN] Cannot parse EXE command:"
-            Write-Host "       $Command"
-
             return $false
           }
 
-          $exe = $parsed.FilePath
-          $arguments = $parsed.Arguments
-
-          if (-not (Test-Path -LiteralPath $exe)) {
-
-            Write-Host "[WARN] Uninstaller does not exist:"
-            Write-Host "       $exe"
-
-            return $false
+          # Inno Setup
+          if ($exe -match '(?i)unins\d*\.exe$') {
+            if ($args -notmatch '(?i)/VERYSILENT') {
+              $args = ($args + ' /VERYSILENT /SUPPRESSMSGBOXES /NORESTART').Trim()
+            }
+          }
+          # NSIS
+          elseif ($exe -match '(?i)(^|\\)uninstall\.exe$') {
+            if ($args -notmatch '(?i)\s/S\b') {
+              $args = ($args + ' /S').Trim()
+            }
           }
 
-          Write-Host "[EXE] $exe"
+          $argumentList = @()
+          if (-not [string]::IsNullOrWhiteSpace($args)) {
+            $argumentList = $args
+          }
 
-          if ($arguments) {
-            Write-Host "[ARGS] $arguments"
+          Write-Host "[UNINSTALL] $Name"
+          Write-Host "  EXE: $exe"
+          if ($argumentList) {
+            Write-Host "  ARGS: $args"
           }
 
           try {
-
-            $argumentList = @()
-
-            if (-not [string]::IsNullOrWhiteSpace($arguments)) {
-              $argumentList = @($arguments)
-            }
-
-            $process = Start-Process `
+            $p = Start-Process `
               -FilePath $exe `
               -ArgumentList $argumentList `
               -Wait `
               -PassThru `
-              -NoNewWindow `
-              -ErrorAction Stop
+              -NoNewWindow
 
-            Write-Host "[EXIT CODE] $($process.ExitCode)"
-
-            return $true
+            # Common successful Windows/MSI uninstall results.
+            return (
+              $p.ExitCode -eq 0 -or
+              $p.ExitCode -eq 1605 -or
+              $p.ExitCode -eq 1614 -or
+              $p.ExitCode -eq 3010
+            )
           }
           catch {
-
-            Write-Host "[FAIL] $DisplayName"
-            Write-Host "[ERROR] $($_.Exception.Message)"
-
+            Write-Warning "[UNINSTALL ERROR] $Name"
+            Write-Warning $_
             return $false
           }
         }
 
+        $registryPaths = @(
+          'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+          'HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
+          'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+          'HKCU:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+        )
 
-        function Invoke-BatchUninstaller {
-          param(
-            [string]$Command,
-            [string]$DisplayName
-          )
+        $apps = @()
 
-          Write-Host "[BAT/CMD] $Command"
-
+        foreach ($path in $registryPaths) {
           try {
-
-            $process = Start-Process `
-              -FilePath 'cmd.exe' `
-              -ArgumentList @(
-                '/d',
-                '/s',
-                '/c',
-                "call $Command"
-              ) `
-              -Wait `
-              -PassThru `
-              -NoNewWindow `
-              -ErrorAction Stop
-
-            Write-Host "[EXIT CODE] $($process.ExitCode)"
-
-            return $true
+            $apps += Get-ItemProperty -Path $path -ErrorAction SilentlyContinue
           }
           catch {
-
-            Write-Host "[FAIL] $DisplayName"
-            Write-Host "[ERROR] $($_.Exception.Message)"
-
-            return $false
           }
         }
 
+        $apps = $apps |
+          Where-Object {
+            -not [string]::IsNullOrWhiteSpace($_.DisplayName)
+          } |
+          Sort-Object DisplayName, PSPath -Unique
 
-        function Invoke-UninstallCommand {
-          param(
-            [string]$Command,
-            [string]$DisplayName
-          )
-
-          if ([string]::IsNullOrWhiteSpace($Command)) {
-            return $false
-          }
-
-          $Command = $Command.Trim()
-
-          if ($Command -match '(?i)\.(bat|cmd)(?:["\s]|$)') {
-
-            return Invoke-BatchUninstaller `
-              -Command $Command `
-              -DisplayName $DisplayName
-          }
-
-          if ($Command -match '(?i)\.exe(?:["\s]|$)') {
-
-            return Invoke-ExeUninstaller `
-              -Command $Command `
-              -DisplayName $DisplayName
-          }
-
-          if ($Command -match '(?i)msiexec') {
-
-            Write-Host "[MSI] $Command"
-
-            try {
-
-              $parsed = Split-ExecutableCommand -Command $Command
-
-              if ($null -ne $parsed) {
-
-                $arguments = $parsed.Arguments
-
-                $process = Start-Process `
-                  -FilePath $parsed.FilePath `
-                  -ArgumentList @($arguments) `
-                  -Wait `
-                  -PassThru `
-                  -NoNewWindow `
-                  -ErrorAction Stop
-
-                Write-Host "[EXIT CODE] $($process.ExitCode)"
-
-                return $true
-              }
-            }
-            catch {
-
-              Write-Host "[FAIL] MSI uninstall"
-              Write-Host "[ERROR] $($_.Exception.Message)"
-            }
-          }
-
-
-          # Last resort
-          Write-Host "[CMD FALLBACK] $Command"
-
-          try {
-
-            $process = Start-Process `
-              -FilePath 'cmd.exe' `
-              -ArgumentList @(
-                '/d',
-                '/s',
-                '/c',
-                $Command
-              ) `
-              -Wait `
-              -PassThru `
-              -NoNewWindow `
-              -ErrorAction Stop
-
-            Write-Host "[EXIT CODE] $($process.ExitCode)"
-
-            return $true
-          }
-          catch {
-
-            Write-Host "[FAIL] $DisplayName"
-            Write-Host "[ERROR] $($_.Exception.Message)"
-
-            return $false
-          }
-        }
-
-
-        function Get-UniversalUninstallCommand {
-          param(
-            $App
-          )
-
-          if ($App.QuietUninstallString) {
-            return $App.QuietUninstallString
-          }
-
-          if ($App.UninstallString) {
-            return $App.UninstallString
-          }
-
-          return $null
-        }
-
-
-        function Test-AppStillInstalled {
-          param(
-            $App
-          )
-
-          try {
-
-            $item = Get-ItemProperty `
-              -LiteralPath $App.PSPath `
-              -ErrorAction SilentlyContinue
-
-            if ($null -eq $item) {
-              return $false
-            }
-
-            return $true
-          }
-          catch {
-
-            return $false
-          }
-        }
-
-
-        function Wait-AppRemoval {
-          param(
-            $App,
-            [int]$Seconds = 20
-          )
-
-          Write-Host "[CHECK] Waiting for uninstall registration to disappear..."
-
-          for ($i = 0; $i -lt $Seconds; $i++) {
-
-            if (-not (Test-AppStillInstalled -App $App)) {
-
-              Write-Host "[REMOVED] $($App.DisplayName)"
-
-              return $true
-            }
-
-            Start-Sleep -Seconds 1
-          }
-
-          if (Test-AppStillInstalled -App $App) {
-
-            Write-Host "[WARN] Registry entry still exists:"
-            Write-Host "       $($App.DisplayName)"
-
-            return $false
-          }
-
-          return $true
-        }
-
-
-        # --------------------------------------------------------
-        # REGISTRY CLEANUP
-        # --------------------------------------------------------
+        $removed = 0
+        $kept = 0
+        $failed = 0
+        $skipped = 0
 
         foreach ($app in $apps) {
+          $name = $app.DisplayName
 
-          $name = [string]$app.DisplayName
-
-          if ([string]::IsNullOrWhiteSpace($name)) {
-            continue
-          }
-
-
-          # ------------------------------------------------------
-          # KEEP ALLOWLIST
-          # ------------------------------------------------------
-
-          if (Test-RegistryAllowlist -Name $name) {
-
+          if (Test-DisplayAllowlist -Name $name) {
             Write-Host "[KEEP] $name"
-
+            $kept++
             continue
           }
 
+          $uninstall = $app.QuietUninstallString
 
-          # ------------------------------------------------------
-          # REMOVE EVERYTHING ELSE WITH UNINSTALLER
-          # ------------------------------------------------------
-
-          $command = Get-UniversalUninstallCommand -App $app
-
-          if ([string]::IsNullOrWhiteSpace($command)) {
-
-            Write-Host ""
-            Write-Host "============================================================"
-            Write-Host "[SKIP] $name"
-            Write-Host "============================================================"
-            Write-Host "[WARN] No uninstall command registered."
-
-            continue
+          if ([string]::IsNullOrWhiteSpace($uninstall)) {
+            $uninstall = $app.UninstallString
           }
 
+          if ([string]::IsNullOrWhiteSpace($uninstall)) {
+            Write-Host "[NO UNINSTALLER] $name"
+            $skipped++
+            continue
+          }
 
           Write-Host ""
           Write-Host "============================================================"
           Write-Host "[REMOVE] $name"
           Write-Host "============================================================"
 
-          if ($app.DisplayVersion) {
-            Write-Host "[VERSION] $($app.DisplayVersion)"
-          }
-
-          if ($app.QuietUninstallString) {
-            Write-Host "[TYPE] QuietUninstallString"
+          if (Invoke-UninstallCommand -Command $uninstall -Name $name) {
+            Write-Host "[REMOVED] $name"
+            $removed++
           }
           else {
-            Write-Host "[TYPE] UninstallString"
-          }
-
-          Write-Host ""
-          Write-Host $command
-          Write-Host ""
-
-          $success = Invoke-UninstallCommand `
-            -Command $command `
-            -DisplayName $name
-
-          if (-not $success) {
-
-            Write-Host "[FAIL] $name"
-
-            continue
-          }
-
-
-          # ------------------------------------------------------
-          # WAIT FOR REGISTRY ENTRY TO DISAPPEAR
-          # ------------------------------------------------------
-
-          $removed = Wait-AppRemoval `
-            -App $app `
-            -Seconds 20
-
-          if (-not $removed) {
-
-            Write-Host "[WARN] Installer returned, but entry remains."
-            Write-Host "[SKIPPED] $name"
+            Write-Warning "[FAILED] $name"
+            $failed++
           }
         }
 
+        Write-Host ""
+        Write-Host "============================================================"
+        Write-Host "REGISTRY UNINSTALL SUMMARY"
+        Write-Host "============================================================"
+        Write-Host "Removed : $removed"
+        Write-Host "Kept    : $kept"
+        Write-Host "Skipped : $skipped"
+        Write-Host "Failed  : $failed"
+        Write-Host "============================================================"
 
     # ============================================================
-    # FINAL LEFTOVER DIRECTORIES
+    # REMOVE KNOWN LEFTOVER DIRECTORIES
     # ============================================================
 
     - name: Remove known leftover directories
-      if: inputs.enable == 'true'
+      if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
-
-        Write-Host ""
-        Write-Host "============================================================"
-        Write-Host " FINAL LEFTOVER DIRECTORY CLEANUP"
-        Write-Host "============================================================"
-
-        # --------------------------------------------------------
-        # These are intentionally removed AFTER Chocolatey
-        # and registry uninstallers have finished.
-        # --------------------------------------------------------
+        $ErrorActionPreference = 'Continue'
 
         $paths = @(
-
-          # GitHub hosted runner tool cache
           'C:\hostedtoolcache',
-
-          # Android
-          'C:\Program Files (x86)\Android',
-          'C:\Program Files\Android',
-          'C:\Android',
-
-          # GHCup / Haskell
           'C:\ghcup',
-
-          # Julia
           'C:\Julia',
-
-          # PostgreSQL leftovers
           'C:\PostgreSQL',
-
-          # MinGW
           'C:\mingw32',
           'C:\mingw64',
-
-          # Selenium
           'C:\selenium',
           'C:\seleniumWebDrivers',
-
-          # Strawberry Perl
           'C:\Strawberry',
-
-          # MSYS2
           'C:\msys64',
-
-          # Android user data
-          "$env:LOCALAPPDATA\Android",
-          "$env:USERPROFILE\.android",
-
-          # Gradle
-          "$env:USERPROFILE\.gradle",
-
-          # Maven
-          "$env:USERPROFILE\.m2",
-
-          # NuGet
-          "$env:USERPROFILE\.nuget",
-
-          # Conda / Anaconda
-          "$env:USERPROFILE\anaconda3",
-          "$env:USERPROFILE\miniconda3"
+          'C:\Program Files (x86)\Android',
+          'C:\Program Files\Android'
         )
 
-
-        $paths = $paths | Select-Object -Unique
-
-
         foreach ($path in $paths) {
-
           if (-not (Test-Path -LiteralPath $path)) {
-
-            Write-Host "[SKIP] $path"
-
+            Write-Host "[NOT FOUND] $path"
             continue
           }
 
-
-          Write-Host ""
           Write-Host "[REMOVE] $path"
 
           try {
-
-            Remove-Item `
-              -LiteralPath $path `
-              -Recurse `
-              -Force `
-              -ErrorAction Stop
-
+            Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction Stop
             Write-Host "[REMOVED] $path"
           }
           catch {
-
-            Write-Host "[WARN] Could not remove:"
-            Write-Host "       $path"
-            Write-Host "       $($_.Exception.Message)"
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
           }
         }
 
-
     # ============================================================
-    # FINAL CHOCOLATEY VERIFICATION
+    # CLEAN STALE SYSTEM / USER ENVIRONMENT VARIABLES
     # ============================================================
 
-    - name: Verify Chocolatey packages
-      if: inputs.enable == 'true'
+    - name: Clean stale environment variables
+      if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
+        $ErrorActionPreference = 'Continue'
 
-        Write-Host ""
-        Write-Host "============================================================"
-        Write-Host " FINAL CHOCOLATEY PACKAGE LIST"
-        Write-Host "============================================================"
-
-        $choco = Get-Command choco.exe -ErrorAction SilentlyContinue
-
-        if ($null -eq $choco) {
-
-          Write-Host "[INFO] Chocolatey not available."
-
-          exit 0
-        }
-
-
-        $lines = @(
-          & choco.exe list --local-only --limit-output 2>$null
-        )
-
-
-        $count = 0
-
-        foreach ($line in $lines) {
-
-          if ([string]::IsNullOrWhiteSpace($line)) {
-            continue
-          }
-
-          if ($line -match '^([^|]+)\|(.+)$') {
-
-            $id = $Matches[1]
-            $version = $Matches[2]
-
-            Write-Host "[PACKAGE] $id $version"
-
-            $count++
-          }
-        }
-
-
-        Write-Host ""
-        Write-Host "[TOTAL CHOCO PACKAGES] $count"
-
-
-    # ============================================================
-    # FINAL DIRECTORY CHECK
-    # ============================================================
-
-    - name: Verify removed directories
-      if: inputs.enable == 'true'
-      shell: pwsh
-      run: |
-
-        Write-Host ""
-        Write-Host "============================================================"
-        Write-Host " FINAL DIRECTORY CHECK"
-        Write-Host "============================================================"
-
-        $paths = @(
+        $badRoots = @(
           'C:\hostedtoolcache',
-          'C:\Program Files (x86)\Android',
-          'C:\Program Files\Android',
-          'C:\Android',
           'C:\ghcup',
           'C:\Julia',
           'C:\PostgreSQL',
@@ -1212,90 +683,250 @@ runs:
           'C:\selenium',
           'C:\seleniumWebDrivers',
           'C:\Strawberry',
-          'C:\msys64'
+          'C:\msys64',
+          'C:\Program Files (x86)\Android',
+          'C:\Program Files\Android'
         )
 
+        $badVariableNames = @(
+          'JAVA_HOME',
+          'JDK_HOME',
+          'JRE_HOME',
+          'ANDROID_HOME',
+          'ANDROID_SDK_ROOT',
+          'ANDROID_NDK_HOME',
+          'GHCUP_INSTALL_BASE_PREFIX',
+          'GHCUP_INSTALL_DIR',
+          'CABAL_HOME',
+          'STACK_ROOT',
+          'JULIA_HOME',
+          'JULIA_DEPOT_PATH',
+          'MINGW_HOME',
+          'MSYS2_PATH_TYPE',
+          'PYTHONHOME',
+          'PYTHONPATH',
+          'CONDA_PREFIX',
+          'CONDA_DEFAULT_ENV',
+          'POSTGRES_HOME',
+          'PGDATA'
+        )
 
-        foreach ($path in $paths) {
+        function Test-BadRoot {
+          param([string]$Value)
 
-          if (Test-Path -LiteralPath $path) {
-
-            Write-Host "[LEFTOVER] $path"
+          if ([string]::IsNullOrWhiteSpace($Value)) {
+            return $false
           }
-          else {
 
-            Write-Host "[CLEAN]    $path"
+          foreach ($root in $badRoots) {
+            if ($Value.IndexOf($root, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+              return $true
+            }
+          }
+
+          return $false
+        }
+
+        function Clean-PathValue {
+          param([string]$Value)
+
+          if ([string]::IsNullOrWhiteSpace($Value)) {
+            return $Value
+          }
+
+          $entries = $Value -split ';'
+          $clean = @()
+
+          foreach ($entry in $entries) {
+            $item = $entry.Trim()
+
+            if ([string]::IsNullOrWhiteSpace($item)) {
+              continue
+            }
+
+            if (Test-BadRoot -Value $item) {
+              Write-Host "[PATH REMOVE] $item"
+              continue
+            }
+
+            $clean += $item
+          }
+
+          return ($clean -join ';')
+        }
+
+        foreach ($scope in @('Machine', 'User')) {
+          Write-Host ""
+          Write-Host "============================================================"
+          Write-Host "CLEANING $scope ENVIRONMENT"
+          Write-Host "============================================================"
+
+          try {
+            $variables = [Environment]::GetEnvironmentVariables($scope)
+
+            foreach ($entry in @($variables.GetEnumerator())) {
+              $name = [string]$entry.Key
+              $value = [string]$entry.Value
+
+              if ($name -ieq 'Path') {
+                $cleanedPath = Clean-PathValue -Value $value
+
+                if ($cleanedPath -ne $value) {
+                  try {
+                    [Environment]::SetEnvironmentVariable('Path', $cleanedPath, $scope)
+                    Write-Host "[ENV CLEAN] $scope Path"
+                  }
+                  catch {
+                    Write-Warning "Could not update $scope Path"
+                  }
+                }
+
+                continue
+              }
+
+              $removeVariable = (
+                $badVariableNames -contains $name -or
+                (Test-BadRoot -Value $value)
+              )
+
+              if ($removeVariable) {
+                try {
+                  [Environment]::SetEnvironmentVariable($name, $null, $scope)
+                  Write-Host "[ENV REMOVE] $scope $name"
+                }
+                catch {
+                  Write-Warning "Could not remove $scope variable: $name"
+                }
+              }
+            }
+          }
+          catch {
+            Write-Warning "Could not enumerate $scope environment variables"
           }
         }
 
+        # Clean the current action process as well.
+        $env:Path = Clean-PathValue -Value $env:Path
+
+        foreach ($name in $badVariableNames) {
+          Remove-Item "Env:$name" -ErrorAction SilentlyContinue
+        }
+
+        # Make the cleaned PATH available to later GitHub Actions steps.
+        if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_ENV)) {
+          Add-Content -Path $env:GITHUB_ENV -Value "Path=$env:Path"
+          Write-Host "[GITHUB_ENV] Cleaned PATH exported"
+        }
 
     # ============================================================
-    # FINAL REPORT
+    # REMOVE LEFTOVER UNWANTED SERVICES
     # ============================================================
 
-    - name: Final cleanup report
-      if: inputs.enable == 'true'
+    - name: Remove leftover unwanted services
+      if: ${{ inputs.enable == 'true' && inputs.remove_services == 'true' }}
       shell: pwsh
       run: |
+        $ErrorActionPreference = 'Continue'
+
+        $services = @(
+          'postgresql-x64-17',
+          'PostgreSQL',
+          'MongoDB',
+          'Apache',
+          'nginx',
+          'MSSQLSERVER',
+          'MSSQL$SQLEXPRESS',
+          'SQLWriter',
+          'SQLTELEMETRY',
+          'SQLAgent$SQLEXPRESS',
+          'MsDtsServer',
+          'hpatchmon',
+          'ZTHELPER'
+        )
+
+        foreach ($name in $services) {
+          $service = Get-Service -Name $name -ErrorAction SilentlyContinue
+
+          if ($null -eq $service) {
+            continue
+          }
+
+          Write-Host "[DELETE SERVICE] $name"
+
+          try {
+            & sc.exe delete $name
+          }
+          catch {
+            Write-Warning "Could not delete service: $name"
+          }
+        }
+
+    # ============================================================
+    # FINAL VERIFICATION
+    # ============================================================
+
+    - name: Verify preserved software
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $registryPaths = @(
+          'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+          'HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
+          'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+          'HKCU:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+        )
+
+        $apps = @()
+
+        foreach ($path in $registryPaths) {
+          $apps += Get-ItemProperty -Path $path -ErrorAction SilentlyContinue
+        }
+
+        $apps = $apps |
+          Where-Object {
+            -not [string]::IsNullOrWhiteSpace($_.DisplayName)
+          } |
+          Sort-Object DisplayName -Unique
 
         Write-Host ""
         Write-Host "============================================================"
-        Write-Host " WINDOWS DEBLOATER FINISHED"
+        Write-Host "PRESERVED SOFTWARE"
         Write-Host "============================================================"
-        Write-Host ""
 
-        Write-Host "PRESERVED:"
-        Write-Host "  - Firefox"
-        Write-Host "  - Visual Studio + components"
-        Write-Host "  - Git / Git for Windows / Git Credential Manager"
-        Write-Host "  - GitHub CLI"
-        Write-Host "  - Tailscale"
-        Write-Host "  - Docker"
-        Write-Host "  - WSL"
-        Write-Host "  - Kubernetes / kubectl / Minikube / kind"
-        Write-Host "  - Node.js / npm / npx"
-        Write-Host "  - PowerShell 7"
-        Write-Host "  - 7-Zip"
-        Write-Host "  - CMake"
-        Write-Host ""
+        $groups = [ordered]@{
+          'Firefox' = '(?i)(Firefox|Mozilla Maintenance Service)'
+          'Visual Studio' = '(?i)(Visual Studio|^vs_|sptools_Microsoft\.VisualStudio)'
+          'Git' = '(?i)^Git($| for Windows| Credential Manager| LFS)'
+          'GitHub CLI' = '(?i)^GitHub (CLI|Command Line Interface)'
+          '7-Zip' = '(?i)^7-Zip'
+          'CMake' = '(?i)^CMake'
+          'Tailscale' = '(?i)Tailscale'
+          'Docker' = '(?i)^Docker'
+          'WSL / Kubernetes' = '(?i)(Windows Subsystem for Linux|^WSL|Ubuntu|Debian|Kali Linux|Kubernetes|kubectl|Minikube|^kind)'
+          'Node.js' = '(?i)(^Node\.js|^NodeJS|^npm|^npx)'
+          'PowerShell' = '(?i)^PowerShell'
+        }
 
-        Write-Host "REMOVED WHERE POSSIBLE:"
-        Write-Host "  - .NET / ASP.NET"
-        Write-Host "  - Java / JDK / JRE"
-        Write-Host "  - Python / Anaconda / Miniconda"
-        Write-Host "  - Android SDK / NDK / Studio"
-        Write-Host "  - AWS"
-        Write-Host "  - Azure"
-        Write-Host "  - MongoDB"
-        Write-Host "  - PostgreSQL"
-        Write-Host "  - MySQL"
-        Write-Host "  - SQL Server"
-        Write-Host "  - Windows SDK / Windows Kits"
-        Write-Host "  - WiX"
-        Write-Host "  - sbt / Scala"
-        Write-Host "  - Xamarin / MAUI"
-        Write-Host "  - Ruby / Perl / PHP / Go / Rust"
-        Write-Host "  - IIS Express"
-        Write-Host "  - Edge / WebView2"
-        Write-Host "  - ImageMagick"
-        Write-Host "  - Inno Setup"
-        Write-Host "  - Cygwin / MSYS / MinGW"
-        Write-Host ""
+        foreach ($group in $groups.GetEnumerator()) {
+          Write-Host ""
+          Write-Host "[$($group.Key)]"
 
-        Write-Host "REMOVED LEFTOVER DIRECTORIES:"
-        Write-Host "  - C:\hostedtoolcache"
-        Write-Host "  - C:\ghcup"
-        Write-Host "  - C:\Julia"
-        Write-Host "  - C:\PostgreSQL"
-        Write-Host "  - C:\mingw32"
-        Write-Host "  - C:\mingw64"
-        Write-Host "  - C:\selenium"
-        Write-Host "  - C:\seleniumWebDrivers"
-        Write-Host "  - C:\Strawberry"
-        Write-Host "  - C:\msys64"
-        Write-Host "  - Android directories"
-        Write-Host ""
+          $matches = $apps |
+            Where-Object { $_.DisplayName -match $group.Value }
 
+          if ($matches.Count -eq 0) {
+            Write-Host "  [NOT FOUND]"
+          }
+          else {
+            foreach ($app in $matches) {
+              Write-Host "  $($app.DisplayName)"
+            }
+          }
+        }
+
+        Write-Host ""
         Write-Host "============================================================"
-        Write-Host " DONE"
+        Write-Host "WINDOWS DEBLOAT COMPLETED"
         Write-Host "============================================================"
