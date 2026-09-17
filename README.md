@@ -48,6 +48,20 @@ The action also removes:
 ```text
 C:\hostedtoolcache
 C:\Program Files (x86)\Android
+C:\actionarchivecache
+C:\Android (symlink)
+C:\ghcup
+C:\Julia
+C:\mingw32
+C:\mingw64
+C:\Modules (if you included 'true' in the azure-del action)
+C:\msys64
+C:\selenium
+C:\SeleniumWebDrivers
+C:\Strawberry
+C:\vcpkg
+C:\Program Files\dotnet
+C:\Program Files (x86)\dotnet
 ```
 Usage
 
@@ -57,8 +71,9 @@ Add the action to your workflow:
         uses: Veniamin668/windows-debloater-runner@v2
         with:
           enable: 'true'
+          azure-del: 'true'
 ```
-Set enable to 'false' to disable the cleanup.
+Set enable to 'false' to disable the cleanup or azure-del false to disable delete Azure modules folder.
 
 How it works
 
@@ -79,6 +94,7 @@ Applications with unsupported uninstallers are skipped instead of being forceful
 Warning
 
 This action is intentionally aggressive.
+If you want to free up even more space, uninstall Visual Studio 2026.
 
 It is designed for disposable GitHub Actions Windows runners.
 
