@@ -21,6 +21,11 @@ inputs:
    description: Remove folder C:\Modules azure modules
    required: false
    default: 'true'
+  
+  choco-del:
+   description: chocolatey remove
+   required: false
+   default: 'true'
 
 runs:
   using: composite
@@ -612,7 +617,7 @@ runs:
         }
         
     - name: Remove Chocolatey packages
-      if: ${{ inputs.enable == 'true' }}
+      if: ${{ inputs.choco-del == 'true' }}
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
