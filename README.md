@@ -23,7 +23,7 @@ The following software is preserved:
 
 ## What gets removed
 
-Software that is not on the allowlist may be removed if a supported uninstaller is available.
+Software that is not on the allowlist may be removed if a supported uninstaller is available. Cleanup via Chocolatey has also been integrated; it can be enabled using choco-del `true`.
 
 Examples:
 - .NET Runtime
@@ -72,8 +72,9 @@ Add the action to your workflow:
         with:
           enable: 'true'
           azure-del: 'true'
+          choco-del: 'true'
 ```
-Set enable to 'false' to disable the cleanup or azure-del false to disable delete Azure modules folder.
+Set enable to 'false' to disable the cleanup or azure-del false to disable delete Azure modules folder, and choco-del to delete software in chocolatey
 
 How it works
 
