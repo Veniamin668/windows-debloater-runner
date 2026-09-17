@@ -610,7 +610,154 @@ runs:
         else {
           Write-Host "[NOT FOUND] $path"
         }
+        
+    - name: Remove Chocolatey packages
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
 
+        if (-not (Get-Command choco.exe -ErrorAction SilentlyContinue)) {
+        Write-Host "[CHOCO] Chocolatey is not installed - skipping"
+        exit 0
+        }
+
+          # ========================================================
+        # CHOCOLATEY ALLOWLIST
+          # Everything else installed through Chocolatey is removed.
+          # ========================================================
+
+        $chocoAllowPatterns = @(
+        # Firefox
+        '(?i)^firefox($|-)'
+
+        # Mozilla Maintenance Service
+        '(?i)^mozilla-maintenance-service($|-)'
+
+        # 7-Zip
+        '(?i)^7zip($|-)'
+
+        # Visual Studio
+        '(?i)^visualstudio($|[-.])'
+        '(?i)^visual-studio($|[-.])'
+        '(?i)^vswhere($|-)'
+
+        # Git
+        '(?i)^git($|-)'
+        '(?i)^git-for-windows($|-)'
+        '(?i)^git-credential-manager($|-)'
+        '(?i)^gcm($|-)'
+
+        # GitHub CLI
+        '(?i)^gh($|-)'
+        '(?i)^github-cli($|-)'
+
+        # Tailscale
+        '(?i)^tailscale($|-)'
+
+        # Docker
+        '(?i)^docker($|-)'
+        '(?i)^docker-desktop($|-)'
+
+        # WSL
+        '(?i)^wsl($|-)'
+        '(?i)^wsl2($|-)'
+
+        # Kubernetes
+        '(?i)^kubernetes($|-)'
+        '(?i)^kubectl($|-)'
+        '(?i)^minikube($|-)'
+        '(?i)^kind($|-)'
+
+        # Node.js
+        '(?i)^nodejs($|-)'
+        '(?i)^nodejs-lts($|-)'
+        '(?i)^npm($|-)'
+        '(?i)^npx($|-)'
+
+        # PowerShell
+         '(?i)^powershell($|-)'
+        '(?i)^powershell-core($|-)'
+        '(?i)^pwsh($|-)'
+        )
+        
+        # ========================================================
+        # DISCOVER INSTALLED CHOCOLATEY PACKAGES
+         # ========================================================
+
+        $packages = @(
+        choco list --local-only --limit-output 2>$null |
+        Where-Object {
+          $_ -match '^[^|]+\|[^|]+$'
+        } |
+        ForEach-Object {
+          $parts = $_ -split '\|', 2
+
+          [PSCustomObject]@{
+            Id      = $parts[0].Trim()
+            Version = $parts[1].Trim()
+          }
+        }
+        )
+
+        Write-Host "[CHOCO] Found $($packages.Count) installed packages"
+
+        # ========================================================
+        # REMOVE EVERYTHING NOT IN CHOCOLATEY ALLOWLIST
+        # ========================================================
+
+        foreach ($package in $packages) {
+
+        $keep = $false
+
+        foreach ($pattern in $chocoAllowPatterns) {
+        if ($package.Id -match $pattern) {
+          $keep = $true
+          break
+        }
+        }
+
+        if ($keep) {
+        Write-Host "[CHOCO KEEP] $($package.Id) $($package.Version)"
+        continue
+        }
+
+        Write-Host "[CHOCO REMOVE] $($package.Id) $($package.Version)"
+
+        try {
+        choco uninstall $package.Id `
+          -y `
+          --force `
+          --no-progress
+
+        # Chocolatey can report a warning/negative exit code even
+        # when the package itself has already disappeared.
+        $remaining = @(
+          choco list --local-only --limit-output 2>$null |
+            Where-Object {
+              $_ -match (
+                '^(?i)' +
+                [regex]::Escape($package.Id) +
+                '\|'
+              )
+            }
+        )
+
+        if ($remaining.Count -eq 0) {
+          Write-Host "[CHOCO REMOVED] $($package.Id)"
+        }
+        else {
+          Write-Warning "[CHOCO FAILED] $($package.Id) is still installed"
+        }
+        }
+        catch {
+        Write-Warning "[CHOCO ERROR] $($package.Id)"
+        Write-Warning $_
+        }
+        }
+
+        Write-Host "[CHOCO] Cleanup complete"
+  
     # ============================================================
     # DISCOVER INSTALLED SOFTWARE
     # ============================================================
