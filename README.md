@@ -68,7 +68,7 @@ Usage
 Add the action to your workflow:
 ``` code
       - name: Debloat windows
-        uses: Veniamin668/windows-debloater-runner@test
+        uses: Veniamin668/windows-debloater-runner@м3
         with:
           enable: 'true'
           azure-del: 'true'
