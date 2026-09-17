@@ -679,7 +679,13 @@ runs:
         '(?i)^nodejs-lts($|-)'
         '(?i)^npm($|-)'
         '(?i)^npx($|-)'
+        
+        # aria2
+        '(?i)^aria2($|-)'
 
+        # cmake
+        '(?i)^cmake.install($|-)'
+        
         # PowerShell
          '(?i)^powershell($|-)'
         '(?i)^powershell-core($|-)'
