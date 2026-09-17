@@ -10,7 +10,6 @@ The following software is preserved:
 
 - Firefox
 - Visual Studio and its components
-- Git
 - Git for Windows
 - Git Credential Manager
 - GitHub CLI
