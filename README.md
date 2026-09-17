@@ -54,7 +54,7 @@ Usage
 Add the action to your workflow:
 ``` code
       - name: Debloat windows
-        uses: Veniamin668/windows-debloater-runner@v1
+        uses: Veniamin668/windows-debloater-runner@v2
         with:
           enable: 'true'
 ```
