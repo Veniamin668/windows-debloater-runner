@@ -41,7 +41,7 @@ Examples:
 - MAUI
 - other unnecessary preinstalled software
 
-### P.S. Some software may still remain. I don't know why some applications fail to uninstall, but I'll try to fix this in the future.
+P.S: I managed to solve the problem by combining folder deletion, the use of Chocolatey, and registry cleaning. This frees up a lot of space, but if you want to completely clean the runner, it is better to uninstall Visual Studio and finish the cleanup manually (after using the script to remove unnecessary components, there isn't much left.)))
 
 The action also removes:
 
