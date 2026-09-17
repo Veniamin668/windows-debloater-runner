@@ -23,7 +23,7 @@ The following software is preserved:
 
 ## What gets removed
 
-Software that is not on the allowlist may be removed if a supported uninstaller is available. Cleanup via Chocolatey has also been integrated; it can be enabled using choco-del `true`.
+Software that is not on the allowlist may be removed if a supported uninstaller is available. Cleanup via Chocolatey has also been integrated; it can be enabled using `choco-del: true`.
 
 Examples:
 - .NET Runtime
