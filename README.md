@@ -94,6 +94,7 @@ Applications with unsupported uninstallers are skipped instead of being forceful
 Warning
 
 This action is intentionally aggressive.
+
 If you want to free up even more space, uninstall Visual Studio 2026.
 
 It is designed for disposable GitHub Actions Windows runners.
