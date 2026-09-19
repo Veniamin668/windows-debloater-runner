@@ -66,7 +66,16 @@ runs:
           # These are not normal user applications. Removing them can
           # break Windows shell, login, OOBE, dialogs, security UI,
           # accessibility, networking, etc.
-          # no delete             'Microsoft.SecHealthUI'
+          # DELETE:
+          # 'Microsoft.SecHealthUI'
+          # 'Microsoft.StartExperiencesApp'
+          # 'Microsoft.Win32WebViewHost'
+          # 'Microsoft.Windows.ParentalControls'
+          # 'MicrosoftWindows.Client.CoreAI'
+          # 'MicrosoftWindows.61869720.Voiess'
+          # 'MicrosoftWindows.61869721.Livtop'
+          # 'MicrosoftWindows.61869722.Speion'
+          #  TESTING REMOVE 'MicrosoftWindows.Client.Core'
           # ============================================================
           $SystemAllowList = @(
               'Microsoft.AAD.BrokerPlugin'
@@ -77,10 +86,7 @@ runs:
               'Microsoft.CredDialogHost'
               'Microsoft.ECApp'
               'Microsoft.LockApp'
-              'Microsoft.SecHealthUI'
-              'Microsoft.StartExperiencesApp'
-              'Microsoft.Win32WebViewHost'
-
+              
               'Microsoft.Windows.Apprep.ChxApp'
               'Microsoft.Windows.AssignedAccessLockApp'
               'Microsoft.Windows.AugLoop.CBS'
@@ -90,7 +96,6 @@ runs:
               'Microsoft.Windows.NarratorQuickStart'
               'Microsoft.Windows.OOBENetworkCaptivePortal'
               'Microsoft.Windows.OOBENetworkConnectionFlow'
-              'Microsoft.Windows.ParentalControls'
               'Microsoft.Windows.PeopleExperienceHost'
               'Microsoft.Windows.PinningConfirmationDialog'
               'Microsoft.Windows.PrintQueueActionCenter'
@@ -99,14 +104,10 @@ runs:
               'Microsoft.Windows.StartMenuExperienceHost'
               'Microsoft.Windows.XGpuEjectDialog'
 
-              'MicrosoftWindows.61869720.Voiess'
-              'MicrosoftWindows.61869721.Livtop'
-              'MicrosoftWindows.61869722.Speion'
               'MicrosoftWindows.61869836.InpApp'
 
               'MicrosoftWindows.Client.CBS'
-              'MicrosoftWindows.Client.Core'
-              'MicrosoftWindows.Client.CoreAI'
+              
               'MicrosoftWindows.Client.FileExp'
               'MicrosoftWindows.Client.OOBE'
               'MicrosoftWindows.Client.Photon'
@@ -939,6 +940,7 @@ runs:
       run: |
         icacls "C:\Program Files (x86)\Microsoft\EdgeWebView" /deny Everyone:(OI)(CI)(RX)
         taskkill /f /im msedgewebview2.exe
+        taskkill /f /im SearchHost.exe
         $ErrorActionPreference = 'Continue'
 
         $path = 'C:\Program Files (x86)\Microsoft'
