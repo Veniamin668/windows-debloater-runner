@@ -895,7 +895,73 @@ runs:
         else {
           Write-Host "[NOT FOUND] $path"
         }
-        
+
+    # ============================================================
+    # REMOVE Windows Kits
+    # ============================================================
+
+    - name: Remove Windows Kits
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = 'C:\Program Files (x86)\Windows Kits'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE Microsoft Edge
+    # ============================================================
+
+    - name: Remove Edge
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = 'C:\Program Files (x86)\Microsoft'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
     - name: Remove Chocolatey packages
       if: ${{ inputs.choco-del == 'true' }}
       shell: pwsh
