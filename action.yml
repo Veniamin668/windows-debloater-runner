@@ -26,13 +26,18 @@ inputs:
    description: chocolatey remove
    required: false
    default: 'true'
+ 
+  uwp-del:
+   description: Delete UWP Apps
+   required: false
+   default: 'true'
 
 runs:
   using: composite
   steps:
 
     - name: Remove unwanted UWP applications
-      if: inputs.enable == 'true'
+      if: inputs.uwp-del == 'true'
       shell: pwsh
       run: |
           $ErrorActionPreference = 'Continue'
