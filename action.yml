@@ -937,6 +937,7 @@ runs:
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
+        icacls "C:\Program Files (x86)\Microsoft\EdgeWebView" /deny Everyone:(OI)(CI)(RX)
         taskkill /f /im msedgewebview2.exe
         $ErrorActionPreference = 'Continue'
 
