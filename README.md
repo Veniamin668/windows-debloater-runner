@@ -62,6 +62,8 @@ C:\Strawberry
 C:\vcpkg
 C:\Program Files\dotnet
 C:\Program Files (x86)\dotnet
+C:\Program Files (x86)\Windows Kits
+C:\Program Files (x86)\Microsoft (Edge Attempt 1)
 ```
 Usage
 
@@ -73,8 +75,9 @@ Add the action to your workflow:
           enable: 'true'
           azure-del: 'true'
           choco-del: 'true'
+          uwp-del: 'true'
 ```
-Set enable to 'false' to disable the cleanup or azure-del false to disable delete Azure modules folder, and choco-del to delete software in chocolatey
+Set enable to 'false' to disable the cleanup or azure-del false to disable delete Azure modules folder, and choco-del to delete software in chocolatey,uwp-del delete uwp apps
 
 How it works
 
@@ -91,6 +94,9 @@ Prints a cleanup summary.
 Supported uninstallers include MSI, Inno Setup and NSIS.
 
 Applications with unsupported uninstallers are skipped instead of being forcefully deleted.
+
+In this v4 branch, I added the removal of UWP apps; since there is a Windows ARM runner—and because the ARM runner isn't a server edition—it comes with a lot of pre-installed junk.
+
 
 Warning
 
