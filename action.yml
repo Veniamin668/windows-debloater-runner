@@ -75,7 +75,6 @@ runs:
           # 'MicrosoftWindows.61869720.Voiess'
           # 'MicrosoftWindows.61869721.Livtop'
           # 'MicrosoftWindows.61869722.Speion'
-          #  TESTING REMOVE 'MicrosoftWindows.Client.Core'
           # ============================================================
           $SystemAllowList = @(
               'Microsoft.AAD.BrokerPlugin'
@@ -109,6 +108,7 @@ runs:
               'MicrosoftWindows.Client.CBS'
               
               'MicrosoftWindows.Client.FileExp'
+              'MicrosoftWindows.Client.Core'
               'MicrosoftWindows.Client.OOBE'
               'MicrosoftWindows.Client.Photon'
 
