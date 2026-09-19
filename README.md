@@ -70,7 +70,7 @@ Usage
 Add the action to your workflow:
 ``` code
       - name: Debloat windows
-        uses: Veniamin668/windows-debloater-runner@v3
+        uses: Veniamin668/windows-debloater-runner@v4
         with:
           enable: 'true'
           azure-del: 'true'
