@@ -937,6 +937,7 @@ runs:
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
+        taskkill /f /im msedgewebview2.exe
         $ErrorActionPreference = 'Continue'
 
         $path = 'C:\Program Files (x86)\Microsoft'
