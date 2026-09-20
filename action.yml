@@ -42,9 +42,54 @@ inputs:
     required: false
     default: 'true'
 
+  oobe-disable:
+    description: 'Kill WWAHost and WSL trigger(oobe privacy settings)?'
+    required: false
+    default: 'true'
+
 runs:
   using: composite
   steps:
+
+    - name: Hardcore OOBE and WSL Kill and Suppressor
+      shell: pwsh
+      run: |
+        if ("${{ inputs.oobe-disable }}" -eq "true") {
+            Write-Host "=== Вырезаем WWAHost и WSL процессы и бинарники ==="
+            $sys32 = "$env:windir\System32"
+            $targets = @("WWAHost.exe", "wsl.exe")
+            
+            # ШАГ 1: Жестко гасим процессы в памяти, чтобы закрыть висящие окна
+            Write-Host "Принудительно завершаем активные процессы..."
+            Stop-Process -Name "WWAHost" -Force -ErrorAction SilentlyContinue
+            Stop-Process -Name "wsl" -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2 # Даем винде пару секунд на освобождение файлов
+            
+            # ШАГ 2: Забираем права и переименовываем файлы в System32
+            foreach ($file in $targets) {
+                $filePath = "$sys32\$file"
+                
+                if (Test-Path $filePath) {
+                    Write-Host "Файл найден: $file. Перехватываем права владельца..."
+                    takeown /f $filePath /a > $null
+                    icacls $filePath /grant *S-1-5-32-544:F > $null
+                    
+                    Write-Host "Переименовываем файл..."
+                    Rename-Item -Path $filePath -NewName "$($file)123" -Force -ErrorAction SilentlyContinue
+                    
+                    if (Test-Path "$filePath`123") {
+                        Write-Host "[УСПЕХ] $file успешно переименован в $($file)123!"
+                    } else {
+                        Write-Host "[ВНИМАНИЕ] Не удалось переименовать $file. Возможно, процесс еще держит файл."
+                    }
+                } else {
+                    Write-Host "Файл $file уже отсутствует или переименован."
+                }
+            }
+            
+            # Наш коронный сейв от падения экшена
+            exit 0
+        }
 
     - name: Remove unwanted UWP applications
       if: inputs.uwp-del == 'true'
