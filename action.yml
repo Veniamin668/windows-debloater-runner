@@ -969,7 +969,7 @@ runs:
         else {
           Write-Host "[NOT FOUND] $path"
         }
-
+        exit 0
     - name: Remove Chocolatey packages
       if: ${{ inputs.choco-del == 'true' }}
       shell: pwsh
