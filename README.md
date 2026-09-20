@@ -78,6 +78,7 @@ Add the action to your workflow:
           uwp-del: 'true'
           path-clean: 'true'
           del-installer-user: 'true'
+          oobe-disable: 'true'
 ```
 Set enable to 'false' to disable the cleanup or azure-del false to disable delete Azure modules folder, and choco-del to delete software in chocolatey,uwp-del delete uwp apps
 
