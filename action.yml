@@ -37,7 +37,7 @@ inputs:
     required: false
     default: 'true'
 
-  del_installer_user:
+  del-installer-user:
     description: 'Remove user installer?'
     required: false
     default: 'true'
@@ -329,7 +329,7 @@ runs:
     - name: Delete Installer User Integration
       shell: pwsh
       run: |
-        if ("${{ inputs.del_installer_user }}" -eq "true") {
+        if ("${{ inputs.del-installer-user }}" -eq "true") {
             if (Get-LocalUser -Name "installer" -ErrorAction SilentlyContinue) {
                 Write-Host "Вырезаем процессы пользователя installer..."
                 Get-Process -IncludeUserName | Where-Object { $_.UserName -like "*installer*" } | Stop-Process -Force -ErrorAction SilentlyContinue
