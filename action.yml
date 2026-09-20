@@ -943,8 +943,8 @@ runs:
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
-        taskkill /f /im msedgewebview2.exe
-        taskkill /f /im SearchHost.exe
+        try { taskkill /f /im msedgewebview2.exe 2>$null } catch {}
+        try { taskkill /f /im SearchHost.exe 2>$null } catch {}
         $ErrorActionPreference = 'Continue'
 
         $path = 'C:\Program Files (x86)\Microsoft'
