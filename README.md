@@ -82,9 +82,13 @@ Add the action to your workflow:
 ```
 Set enable to 'false' to disable the cleanup
 azure-del false to disable delete Azure modules folder 
+
 choco-del to delete software in chocolatey,
+
 uwp-del delete uwp apps. 
+
 del-installer-user removes the "installer" user and their folder, which takes up quite a bit of space. 
+
 oobe-disable Renames the WWAHost.exe and wsl.exe files by appending "123" to their names to bypass the OOBE privacy settings screen and the pop-up prompting a WSL update.
 
 
