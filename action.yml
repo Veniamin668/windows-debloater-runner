@@ -1786,10 +1786,10 @@ runs:
 
         # 3. Чистим Системный и Пользовательский PATH
         Write-Host "[*] Проверяем системный PATH..." -ForegroundColor Cyan
-        Filter-DeadPaths -TargetContext [EnvironmentVariableTarget]::Machine
+        Filter-DeadPaths -TargetContext "Machine"
 
         Write-Host "[*] Проверяем пользовательский PATH..." -ForegroundColor Cyan
-        Filter-DeadPaths -TargetContext [EnvironmentVariableTarget]::User
+        Filter-DeadPaths -TargetContext "User"
 
         Write-Host "[+] Переменные среды и PATH девственно чисты!" -ForegroundColor Green
         
