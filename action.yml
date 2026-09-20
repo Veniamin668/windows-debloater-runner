@@ -37,6 +37,10 @@ inputs:
     required: false
     default: 'true'
 
+  del_installer_user:
+    description: 'Remove user installer?'
+    required: false
+    default: 'true'
 
 runs:
   using: composite
@@ -322,69 +326,25 @@ runs:
           Write-Host "UWP / AppX cleanup completed." -ForegroundColor Green
           Write-Host ""
 
-    - name: Clean environment variables and PATH
-      if: inputs.path-clean == 'true'
+    - name: Delete Installer User Integration
       shell: pwsh
       run: |
-        Write-Host "========== Начинаем смачную чистку переменных среды и PATH (pwsh 7) ==========" -ForegroundColor Cyan
-
-        # 1. Белый список системных переменных (База ОС, WSL, Docker)
-        $AllowedSystemVars = [System.Collections.Generic.HashSet[string]]::new([string[]]@(
-            "ComSpec", "OS", "PATHEXT", "SystemDrive", "SystemRoot", "windir",
-            "ALLUSERSPROFILE", "PUBLIC", "LOCALAPPDATA", "APPDATA", "COMPUTERNAME", 
-            "USERPROFILE", "USERNAME", "NUMBER_OF_PROCESSORS", "PROCESSOR_ARCHITECTURE", 
-            "PROCESSOR_IDENTIFIER", "PROCESSOR_LEVEL", "PROCESSOR_REVISION",
-            "ProgramData", "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", 
-            "CommonProgramFiles", "CommonProgramFiles(x86)",
-            "DOCKER_HOST", "DOCKER_TLS_VERIFY", "DOCKER_CERT_PATH",
-            "WSLENV", "WSL_DISTRO_NAME"
-        ), [System.StringComparer]::OrdinalIgnoreCase)
-
-        # 2. Выносим лишние переменные окружения через быстрый .NET API
-        Write-Host "[*] Анализируем системные переменные..." -ForegroundColor Cyan
-        Get-ChildItem Env: | Where-Object { 
-            -not $AllowedSystemVars.Contains($_.Name) -and 
-            $_.Name -notlike "Path" -and 
-            $_.Name -notlike "TEMP" -and 
-            $_.Name -notlike "TMP" 
-        } | ForEach-Object {
-            Write-Host "[-] Сносим мусорную переменную: $($_.Name)" -ForegroundColor Yellow
-            [Environment]::SetEnvironmentVariable($_.Name, $null, [EnvironmentVariableTarget]::Machine)
-            [Environment]::SetEnvironmentVariable($_.Name, $null, [EnvironmentVariableTarget]::User)
-            [Environment]::SetEnvironmentVariable($_.Name, $null, [EnvironmentVariableTarget]::Process)
-        }
-
-        # Функция для быстрой фильтрации путей от мертвых ссылок
-        function Filter-DeadPaths ([string]$TargetContext) {
-            $RawPath = [Environment]::GetEnvironmentVariable("Path", $TargetContext)
-            if (-not [string]::IsNullOrEmpty($RawPath)) {
-                $Elements = $RawPath -split ';' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-                $Cleaned = [System.Collections.Generic.List[string]]::new()
-
-                foreach ($Dir in $Elements) {
-                    $NormalizedDir = $Dir.Trim().Trim('"')
-                    # pwsh делает Test-Path мгновенным на быстром NVMe раннера
-                    if (Test-Path -LiteralPath $NormalizedDir -ErrorAction SilentlyContinue) {
-                        $Cleaned.Add($Dir)
-                    } else {
-                        Write-Host "[-] [$TargetContext PATH] Вырезана мертвая ссылка: $Dir" -ForegroundColor Red
-                    }
-                }
+        if ("${{ inputs.del_installer_user }}" -eq "true") {
+            if (Get-LocalUser -Name "installer" -ErrorAction SilentlyContinue) {
+                Write-Host "Вырезаем процессы пользователя installer..."
+                Get-Process -IncludeUserName | Where-Object { $_.UserName -like "*installer*" } | Stop-Process -Force -ErrorAction SilentlyContinue
                 
-                $NewPath = $Cleaned -join ';'
-                [Environment]::SetEnvironmentVariable("Path", $NewPath, $TargetContext)
-                [Environment]::SetEnvironmentVariable("Path", $NewPath, [EnvironmentVariableTarget]::Process)
+                Write-Host "Удаляем учётную запись..."
+                Remove-LocalUser -Name "installer" -ErrorAction SilentlyContinue
+                
+                if (Test-Path "C:\Users\installer") { 
+                    Remove-Item -Path "C:\Users\installer" -Recurse -Force -ErrorAction SilentlyContinue 
+                }
+                Write-Host "[УСПЕХ] Юзер installer полностью удалён из системы."
+            } else {
+                Write-Host "Юзер installer не найден, система чиста."
             }
         }
-
-        # 3. Чистим Системный и Пользовательский PATH
-        Write-Host "[*] Проверяем системный PATH..." -ForegroundColor Cyan
-        Filter-DeadPaths -TargetContext [EnvironmentVariableTarget]::Machine
-
-        Write-Host "[*] Проверяем пользовательский PATH..." -ForegroundColor Cyan
-        Filter-DeadPaths -TargetContext [EnvironmentVariableTarget]::User
-
-        Write-Host "[+] Переменные среды и PATH девственно чисты!" -ForegroundColor Green
 
 
     # ============================================================
@@ -1724,6 +1684,70 @@ runs:
         }
 
 
+    - name: Clean environment variables and PATH
+      if: inputs.path-clean == 'true'
+      shell: pwsh
+      run: |
+        Write-Host "========== Начинаем смачную чистку переменных среды и PATH (pwsh 7) ==========" -ForegroundColor Cyan
+
+        # 1. Белый список системных переменных (База ОС, WSL, Docker)
+        $AllowedSystemVars = [System.Collections.Generic.HashSet[string]]::new([string[]]@(
+            "ComSpec", "OS", "PATHEXT", "SystemDrive", "SystemRoot", "windir",
+            "ALLUSERSPROFILE", "PUBLIC", "LOCALAPPDATA", "APPDATA", "COMPUTERNAME", 
+            "USERPROFILE", "USERNAME", "NUMBER_OF_PROCESSORS", "PROCESSOR_ARCHITECTURE", 
+            "PROCESSOR_IDENTIFIER", "PROCESSOR_LEVEL", "PROCESSOR_REVISION",
+            "ProgramData", "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", 
+            "CommonProgramFiles", "CommonProgramFiles(x86)",
+            "DOCKER_HOST", "DOCKER_TLS_VERIFY", "DOCKER_CERT_PATH",
+            "WSLENV", "WSL_DISTRO_NAME"
+        ), [System.StringComparer]::OrdinalIgnoreCase)
+
+        # 2. Выносим лишние переменные окружения через быстрый .NET API
+        Write-Host "[*] Анализируем системные переменные..." -ForegroundColor Cyan
+        Get-ChildItem Env: | Where-Object { 
+            -not $AllowedSystemVars.Contains($_.Name) -and 
+            $_.Name -notlike "Path" -and 
+            $_.Name -notlike "TEMP" -and 
+            $_.Name -notlike "TMP" 
+        } | ForEach-Object {
+            Write-Host "[-] Сносим мусорную переменную: $($_.Name)" -ForegroundColor Yellow
+            [Environment]::SetEnvironmentVariable($_.Name, $null, [EnvironmentVariableTarget]::Machine)
+            [Environment]::SetEnvironmentVariable($_.Name, $null, [EnvironmentVariableTarget]::User)
+            [Environment]::SetEnvironmentVariable($_.Name, $null, [EnvironmentVariableTarget]::Process)
+        }
+
+        # Функция для быстрой фильтрации путей от мертвых ссылок
+        function Filter-DeadPaths ([string]$TargetContext) {
+            $RawPath = [Environment]::GetEnvironmentVariable("Path", $TargetContext)
+            if (-not [string]::IsNullOrEmpty($RawPath)) {
+                $Elements = $RawPath -split ';' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+                $Cleaned = [System.Collections.Generic.List[string]]::new()
+
+                foreach ($Dir in $Elements) {
+                    $NormalizedDir = $Dir.Trim().Trim('"')
+                    # pwsh делает Test-Path мгновенным на быстром NVMe раннера
+                    if (Test-Path -LiteralPath $NormalizedDir -ErrorAction SilentlyContinue) {
+                        $Cleaned.Add($Dir)
+                    } else {
+                        Write-Host "[-] [$TargetContext PATH] Вырезана мертвая ссылка: $Dir" -ForegroundColor Red
+                    }
+                }
+                
+                $NewPath = $Cleaned -join ';'
+                [Environment]::SetEnvironmentVariable("Path", $NewPath, $TargetContext)
+                [Environment]::SetEnvironmentVariable("Path", $NewPath, [EnvironmentVariableTarget]::Process)
+            }
+        }
+
+        # 3. Чистим Системный и Пользовательский PATH
+        Write-Host "[*] Проверяем системный PATH..." -ForegroundColor Cyan
+        Filter-DeadPaths -TargetContext [EnvironmentVariableTarget]::Machine
+
+        Write-Host "[*] Проверяем пользовательский PATH..." -ForegroundColor Cyan
+        Filter-DeadPaths -TargetContext [EnvironmentVariableTarget]::User
+
+        Write-Host "[+] Переменные среды и PATH девственно чисты!" -ForegroundColor Green
+        
     # ============================================================
     # FINAL VERIFICATION
     # ============================================================
