@@ -469,6 +469,75 @@ runs:
         }
 
 
+    - name: Purge Windows System Services & Telemetry
+      if: ${{ inputs.enable == 'true' && inputs.remove_services == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        
+        # Красивая шапка лога
+        Write-Host "======================================================================"
+        Write-Host "      [SYSTEM DETOX] TERMINATING & DISABLING WINDOWS SERVICES         "
+        Write-Host "======================================================================"
+
+        # Список системного мусора (Служба -> Понятное имя для лога)
+        $sysServices = [ordered]@{
+            "WSearch"       = "Windows Search (Disk Indexer)"
+            "DiagTrack"     = "Connected User Experiences & Telemetry (Spyware)"
+            "WerSvc"        = "Windows Error Reporting"
+            "SysMain"       = "SysMain (SuperFetch Agent)"
+            "wuauserv"      = "Windows Update Service"
+            "dmwappushservice" = "Device Management Wireless Application Telemetry"
+            "MapsBroker"    = "Downloaded Maps Manager"
+            "XblAuthManager"= "Xbox Live Authentication Manager"
+            "XblGameSave"   = "Xbox Live Game Save Service"
+            "XboxNetApiSvc" = "Xbox Live Networking Service"
+            "XboxGipSvc"    = "Xbox Accessory Management Service"
+            "ParentalControls" = "Windows Parental Controls"
+            "Fax"           = "Fax Service (Legacy Bloat)"
+            "PrintSpooler"  = "Print Spooler (Printer Agent)"
+            "BluetoothUserService" = "Bluetooth User Support Service"
+            "OneSyncSvc"    = "Sync Host (Microsoft Account Telemetry)"
+            "MessagingService" = "Messaging Service (UWP Bloat)"
+            "PhoneSvc"      = "Phone Service"
+            "SensorService" = "Sensor Service Agent"
+            "WalletService" = "Wallet Service (Payment Agent)"
+        }
+
+        foreach ($id in $sysServices.Keys) {
+            $description = $sysServices[$id]
+            
+            # Проверяем наличие службы, полностью скрывая системные ошибки
+            $serviceExists = Get-Service -Name $id -ErrorAction SilentlyContinue
+
+            if ($serviceExists) {
+                Write-Host " >> [FREEZING] $id -- ($description)" -ForegroundColor Cyan
+                
+                # 1. Жестко останавливаем процесс службы (глушим stderr и stdout)
+                Stop-Service -Name $id -Force -ErrorAction SilentlyContinue > $null 2>&1
+                
+                # 2. Используем sc config для отключения автозапуска (start= disabled)
+                # Важно: после start= ОБЯЗАТЕЛЬНО должен идти пробел, это синтаксис sc.exe!
+                sc.exe config $id start= disabled > $null 2>&1
+
+                # Проверяем успешность операции
+                $status = Get-Service -Name $id -ErrorAction SilentlyContinue
+                if ($status.StartType -eq 'Disabled') {
+                    Write-Host "    [STATUS] >> [MUTED] $id is now completely DEAD." -ForegroundColor Green
+                } else {
+                    Write-Host "    [STATUS] >> [WARNING] $id partially locked but suppressed." -ForegroundColor Yellow
+                }
+            } else {
+                # Если службы уже нет (например, на чистом ARM-раннере), выводим красивый пропуск
+                Write-Host " >> [SKIP] $id -- Not found on this platform." -ForegroundColor Gray
+            }
+            Write-Host "----------------------------------------------------------------------"
+        }
+
+        Write-Host "======================================================================"
+        Write-Host "      [SUCCESS] All target system services have been neutralized!     "
+        Write-Host "======================================================================"
+
     # ============================================================
     # STOP KNOWN UNWANTED SERVICES
     # ============================================================
