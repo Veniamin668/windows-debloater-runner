@@ -1811,7 +1811,7 @@ runs:
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
-        \$ErrorActionPreference = 'Continue'
+        $ErrorActionPreference = 'Continue'
 
         # Твой универсальный путь через переменную диска
         basePath = "env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
@@ -1820,7 +1820,7 @@ runs:
           # Ищем именно ПАПКИ (Directory), в имени которых есть слово Python
           pythonFolders = Get-ChildItem -LiteralPath basePath -Directory -Filter "*Python*" -ErrorAction SilentlyContinue
 
-          if (\$pythonFolders) {
+          if ($pythonFolders) {
             foreach (folder in pythonFolders) {
               path = folder.FullName
               Write-Host "[REMOVE] \$path"
@@ -1836,16 +1836,16 @@ runs:
               }
               catch {
                 Write-Warning "Failed to completely remove \$path"
-                Write-Warning \$_
+                Write-Warning $_
               }
             }
           }
           else {
-            Write-Host "[NOT FOUND] Any Python folders in \$basePath"
+            Write-Host "[NOT FOUND] Any Python folders in $basePath"
           }
         }
         else {
-          Write-Host "[NOT FOUND] Start Menu Base Path: \$basePath"
+          Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
         }
 
     - name: Remove Edge shortcuts from Start Menu
