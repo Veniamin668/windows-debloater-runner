@@ -1756,9 +1756,40 @@ runs:
             $_.Name -notlike "TMP" 
         } | ForEach-Object {
             Write-Host "[-] Сносим мусорную переменную: $($_.Name)" -ForegroundColor Yellow
-            [Environment]::SetEnvironmentVariable($_.Name, $null, [EnvironmentVariableTarget]::Machine)
-            [Environment]::SetEnvironmentVariable($_.Name, $null, [EnvironmentVariableTarget]::User)
-            [Environment]::SetEnvironmentVariable($_.Name, $null, [EnvironmentVariableTarget]::Process)
+
+            # Удаляем переменную из системного реестра
+            $MachineKey = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey(
+                "SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+                $true
+            )
+
+            # Удаляем переменную из пользовательского реестра
+            $UserKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey(
+                "Environment",
+                $true
+            )
+
+            try {
+                if ($null -ne $MachineKey) {
+                    $MachineKey.DeleteValue($_.Name, $false)
+                }
+
+                if ($null -ne $UserKey) {
+                    $UserKey.DeleteValue($_.Name, $false)
+                }
+            }
+            finally {
+                if ($null -ne $MachineKey) {
+                    $MachineKey.Dispose()
+                }
+
+                if ($null -ne $UserKey) {
+                    $UserKey.Dispose()
+                }
+            }
+
+            # Удаляем переменную из текущего процесса
+            Remove-Item -Path "Env:\$($_.Name)" -Force -ErrorAction SilentlyContinue
         }
 
         # Функция для быстрой фильтрации путей от мертвых ссылок
@@ -1770,6 +1801,7 @@ runs:
 
                 foreach ($Dir in $Elements) {
                     $NormalizedDir = $Dir.Trim().Trim('"')
+
                     # pwsh делает Test-Path мгновенным на быстром NVMe раннера
                     if (Test-Path -LiteralPath $NormalizedDir -ErrorAction SilentlyContinue) {
                         $Cleaned.Add($Dir)
@@ -1792,6 +1824,7 @@ runs:
         Filter-DeadPaths -TargetContext "User"
 
         Write-Host "[+] Переменные среды и PATH девственно чисты!" -ForegroundColor Green
+        
         
     # ============================================================
     # FINAL VERIFICATION
