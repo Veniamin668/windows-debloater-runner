@@ -47,6 +47,11 @@ inputs:
     required: false
     default: 'true'
 
+  npm-del:
+    description: 'Remove C:\npm folder?'
+    required: false
+    default: 'true'
+
 runs:
   using: composite
   steps:
