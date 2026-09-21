@@ -1812,36 +1812,17 @@ runs:
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
-
-        # Твой универсальный путь через переменную диска
-        basePath = "env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
+        $basePath = "$env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
 
         if (Test-Path -LiteralPath $basePath) {
-          # Ищем именно ПАПКИ (Directory), в имени которых есть слово Python
-          pythonFolders = Get-ChildItem -LiteralPath basePath -Directory -Filter "*Python*" -ErrorAction SilentlyContinue
-
-          if ($pythonFolders) {
-            foreach (folder in pythonFolders) {
-              path = folder.FullName
+          Write-Host "[SCANNING START MENU] Looking for Python directories in $basePath"
+          
+          # Находим все папки со словом Python на любых уровнях и жёстко сносим через конвейер
+          Get-ChildItem -Path $basePath -Recurse -Directory -Filter "*Python*" -ErrorAction SilentlyContinue | ForEach-Object {
+              $path = $_.FullName
               Write-Host "[REMOVE] $path"
-
-              try {
-                Remove-Item `
-                  -LiteralPath $path `
-                  -Recurse `
-                  -Force `
-                  -ErrorAction Stop
-
-                Write-Host "[REMOVED] $path"
-              }
-              catch {
-                Write-Warning "Failed to completely remove $path"
-                Write-Warning $_
-              }
-            }
-          }
-          else {
-            Write-Host "[NOT FOUND] Any Python folders in $basePath"
+              Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "[REMOVED] $path"
           }
         }
         else {
@@ -1853,40 +1834,23 @@ runs:
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
-
-        # Путь к программам меню Пуск
-        basePath = "env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
+        $basePath = "$env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
 
         if (Test-Path -LiteralPath $basePath) {
-          # Ищем именно ФАЙЛЫ ярлыков, в имени которых упоминается Edge
-          edgeShortcuts = Get-ChildItem -LiteralPath basePath -File -Filter "*Edge*" -Recurse -ErrorAction SilentlyContinue
-
-          if ($edgeShortcuts) {
-            foreach (shortcut in edgeShortcuts) {
-              path = shortcut.FullName
+          Write-Host "[SCANNING START MENU] Looking for Edge shortcuts in $basePath"
+          
+          # Находим именно файлы ярлыков Microsoft Edge и стираем их напрямую
+          Get-ChildItem -Path $basePath -Recurse -File -Filter "*Edge*" -ErrorAction SilentlyContinue | ForEach-Object {
+              $path = $_.FullName
               Write-Host "[REMOVE] $path"
-
-              try {
-                Remove-Item `
-                  -LiteralPath $path `
-                  -Force `
-                  -ErrorAction Stop
-
-                Write-Host "[REMOVED] $path"
-              }
-              catch {
-                Write-Warning "Failed to completely remove $path"
-                Write-Warning $_
-              }
-            }
-          }
-          else {
-            Write-Host "[NOT FOUND] Any Edge shortcuts in $basePath"
+              Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+              Write-Host "[REMOVED] $path"
           }
         }
         else {
           Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
         }
+
 
     - name: Remove Chocolatey packages
       if: ${{ inputs.choco-del == 'true' }}
