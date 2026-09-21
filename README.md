@@ -8,7 +8,6 @@ This GitHub Action removes unnecessary preinstalled software from Windows runner
 
 The following software is preserved:
 
-- Firefox
 - Visual Studio and its components
 - Git for Windows
 - Git Credential Manager
@@ -99,6 +98,7 @@ Add the action to your workflow:
           path-clean: 'true'
           del-installer-user: 'true'
           oobe-disable: 'true'
+          wsl-del: 'true'
           npm-del: 'true'
 ```
 Set enable to 'false' to disable the cleanup
@@ -110,7 +110,7 @@ uwp-del delete uwp apps.
 
 del-installer-user removes the "installer" user and their folder, which takes up quite a bit of space. 
 
-oobe-disable Renames the WWAHost.exe and wsl.exe files by appending "123" to their names to bypass the OOBE privacy settings screen and the pop-up prompting a WSL update.
+oobe-disable Renames the WWAHost.exe file by appending "123" to their names to bypass the OOBE privacy settings screen.
 
 npm-del remove %SYSTEMDRIVE%\npm folder
 
