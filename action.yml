@@ -1852,40 +1852,40 @@ runs:
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
-        \$ErrorActionPreference = 'Continue'
+        $ErrorActionPreference = 'Continue'
 
         # Путь к программам меню Пуск
         basePath = "env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
 
-        if (Test-Path -LiteralPath \$basePath) {
+        if (Test-Path -LiteralPath $basePath) {
           # Ищем именно ФАЙЛЫ ярлыков, в имени которых упоминается Edge
           edgeShortcuts = Get-ChildItem -LiteralPath basePath -File -Filter "*Edge*" -Recurse -ErrorAction SilentlyContinue
 
-          if (\$edgeShortcuts) {
+          if ($edgeShortcuts) {
             foreach (shortcut in edgeShortcuts) {
               path = shortcut.FullName
-              Write-Host "[REMOVE] \$path"
+              Write-Host "[REMOVE] $path"
 
               try {
                 Remove-Item `
-                  -LiteralPath \$path `
+                  -LiteralPath $path `
                   -Force `
                   -ErrorAction Stop
 
-                Write-Host "[REMOVED] \$path"
+                Write-Host "[REMOVED] $path"
               }
               catch {
-                Write-Warning "Failed to completely remove \$path"
-                Write-Warning \$_
+                Write-Warning "Failed to completely remove $path"
+                Write-Warning $_
               }
             }
           }
           else {
-            Write-Host "[NOT FOUND] Any Edge shortcuts in \$basePath"
+            Write-Host "[NOT FOUND] Any Edge shortcuts in $basePath"
           }
         }
         else {
-          Write-Host "[NOT FOUND] Start Menu Base Path: \$basePath"
+          Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
         }
 
     - name: Remove Chocolatey packages
