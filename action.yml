@@ -485,7 +485,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '$env:SYSTEMDRIVE\hostedtoolcache'
+        $path = "$env:SYSTEMDRIVE\hostedtoolcache"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -519,7 +519,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $base = '%SYSTEMDRIVE%\Program Files (x86)'
+        $base = "$env:SYSTEMDRIVE\Program Files (x86)"
 
         if (-not (Test-Path -LiteralPath $base)) {
           Write-Host "[NOT FOUND] $base"
@@ -563,7 +563,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\actionarchivecache'
+        $path = "$env:SYSTEMDRIVE\actionarchivecache"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -596,7 +596,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\ghcup'
+        $path = "$env:SYSTEMDRIVE"\ghcup"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -629,7 +629,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Julia'
+        $path = "$env:SYSTEMDRIVE\Julia"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -662,7 +662,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\mingw32'
+        $path = "$env:SYSTEMDRIVE\mingw32"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -695,7 +695,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\mingw64'
+        $path = "$env:SYSTEMDRIVE\mingw64"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -728,7 +728,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\msys64'
+        $path = "$env:SYSTEMDRIVE\msys64"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -761,7 +761,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\selenium'
+        $path = "$env:SYSTEMDRIVE\selenium"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -794,7 +794,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\SeleniumWebDrivers'
+        $path = "$env:SYSTEMDRIVE\SeleniumWebDrivers"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -827,7 +827,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Strawberry'
+        $path = "$env:SYSTEMDRIVE\Strawberry"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -860,7 +860,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\vcpkg'
+        $path = "$env:SYSTEMDRIVE\vcpkg"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -893,7 +893,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Program Files\dotnet'
+        $path = "$env:SYSTEMDRIVE\Program Files\dotnet"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -926,7 +926,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Program Files (x86)\dotnet'
+        $path = "$env:SYSTEMDRIVE\Program Files (x86)\dotnet"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -959,7 +959,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Modules'
+        $path = "$env:SYSTEMDRIVE\Modules"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -992,7 +992,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Program Files (x86)\Windows Kits'
+        $path = "$env:SYSTEMDRIVE\Program Files (x86)\Windows Kits"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1028,7 +1028,7 @@ runs:
         taskkill /f /im msedge.exe
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Program Files (x86)\Microsoft'
+        $path = "$env:SYSTEMDRIVE\Program Files (x86)\Microsoft"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1062,7 +1062,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE\npm'
+        $path = "$env:SYSTEMDRIVE\npm"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1095,7 +1095,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\aliyun-cli'
+        $path = "$env:SYSTEMDRIVE\aliyun-cli"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1128,7 +1128,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Program Files\Android'
+        $path = "$env:SYSTEMDRIVE\Program Files\Android"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1161,7 +1161,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Program Files\LLVM'
+        $path = "$env:SYSTEMDRIVE\Program Files\LLVM"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1194,7 +1194,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Program Files\Microsoft SQL Server'
+        $path = "$env:SYSTEMDRIVE\Program Files\Microsoft SQL Server"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1227,7 +1227,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Program Files (x86)\Microsoft SQL Server'
+        $path = "$env:SYSTEMDRIVE\Program Files (x86)\Microsoft SQL Server"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1260,7 +1260,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\ProgramData\Package Cache'
+        $path = "$env:SYSTEMDRIVE\ProgramData\Package Cache"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1293,7 +1293,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\ProgramData\pipelinesagent'
+        $path = "$env:SYSTEMDRIVE\ProgramData\pipelinesagent"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1326,7 +1326,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%USERPROFILE%\.rustup'
+        $path = "$env:USERPROFILE\.rustup"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1359,7 +1359,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%USERPROFILE%\.dotnet'
+        $path = "$env:USERPROFILE\.dotnet"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1392,7 +1392,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%USERPROFILE%\.cargo'
+        $path = "$env:USERPROFILE\.cargo"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1425,7 +1425,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%USERPROFILE%\.aliyun'
+        $path = "$env:USERPROFILE\.aliyun"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1458,7 +1458,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%USERPROFILE\AppData\Local\Microsoft\OneDrive'
+        $path = "$env:USERPROFILE\AppData\Local\Microsoft\OneDrive"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1491,7 +1491,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%TEMP%'
+        $path = "$env:TEMP"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1524,7 +1524,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\ProgramData\runner'
+        $path = "$env:SYSTEMDRIVE\ProgramData\runner"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1557,7 +1557,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Tools'
+        $path = "$env:SYSTEMDRIVE\Tools"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1590,7 +1590,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Users\Default\.cargo'
+        $path = "$env:SYSTEMDRIVE\Users\Default\.cargo"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1623,7 +1623,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Users\Default\.rustup'
+        $path = "$env:SYSTEMDRIVE\Users\Default\.rustup"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1656,7 +1656,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\Users\Default\.dotnet'
+        $path = "$env:SYSTEMDRIVE\Users\Default\.dotnet"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
