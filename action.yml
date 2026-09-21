@@ -596,7 +596,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = "$env:SYSTEMDRIVE"\ghcup"
+        $path = "$env:SYSTEMDRIVE\ghcup"
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
