@@ -1052,7 +1052,7 @@ runs:
     # ============================================================
 
     - name: Remove npm folder in %systemdrive%
-      if: ${{ inputs.enable == 'true' }}
+      if: ${{ inputs.npm-del == 'true' }}
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
@@ -1080,6 +1080,600 @@ runs:
           Write-Host "[NOT FOUND] $path"
         }
 
+    # ============================================================
+    # REMOVE ALIBABA Cloud cli
+    # ============================================================
+
+    - name: Remove ALIBABA CLOUD CLI
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\aliyun-cli'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE Android in program files
+    # ============================================================
+
+    - name: Remove Android in Program Files
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\Program Files\Android'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE LLVM
+    # ============================================================
+
+    - name: Remove LLVM
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\Program Files\LLVM'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE Microsoft SQL Server
+    # ============================================================
+
+    - name: Remove SQL Server microsoft
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\Program Files\Microsoft SQL Server'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE Microsoft SQL Server x86
+    # ============================================================
+
+    - name: Remove SQL Server microsoft
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\Program Files (x86)\Microsoft SQL Server'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE Package Cache
+    # ============================================================
+
+    - name: Remove Package Cache
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\ProgramData\Package Cache'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE pipelinesagent
+    # ============================================================
+
+    - name: Remove pipelinesagent
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\ProgramData\pipelinesagent'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE .rustup in %USERPROFILE%
+    # ============================================================
+
+    - name: Remove .rustup folder in userprofile
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%USERPROFILE%\.rustup'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE .dotnet in %USERPROFILE%
+    # ============================================================
+
+    - name: Remove .dotnet folder in userprofile
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%USERPROFILE%\.dotnet'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE .cargo in %USERPROFILE%
+    # ============================================================
+
+    - name: Remove .cargo folder in userprofile
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%USERPROFILE%\.cargo'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE .aliyun in %USERPROFILE%
+    # ============================================================
+
+    - name: Remove .aliyun folder in userprofile
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%USERPROFILE%\.aliyun'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE OneDrive in Appdata\Local
+    # ============================================================
+
+    - name: Remove OneDrive folder in userprofile
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%USERPROFILE\AppData\Local\Microsoft\OneDrive'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE Temp
+    # ============================================================
+
+    - name: Remove Temp
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%TEMP%'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+        
+    # ============================================================
+    # REMOVE runner folder in Program Data
+    # ============================================================
+
+    - name: Remove runner folder (NOT WORKFLOW!)
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\ProgramData\runner'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE Tools in systemdrive
+    # ============================================================
+
+    - name: Remove Tools in SYSTEMDRIVE
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\Tools'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE .cargo in Default user folder
+    # ============================================================
+
+    - name: Remove .cargo in Default user folder
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\Users\Default\.cargo'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE .rustup in Default user folder
+    # ============================================================
+
+    - name: Remove .rustup in Default user folder
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\Users\Default\.rustup'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    # ============================================================
+    # REMOVE .dotnet in Default user folder
+    # ============================================================
+
+    - name: Remove .dotnet in Default user folder
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE%\Users\Default\.dotnet'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+        
     - name: Remove Chocolatey packages
       if: ${{ inputs.choco-del == 'true' }}
       shell: pwsh
