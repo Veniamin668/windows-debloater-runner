@@ -397,6 +397,51 @@ runs:
         }
 
 
+    - name: Deploy Zen Browser (Auto Platform Detect)
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        Write-Host "[SCANNING] Checking system processor architecture..."
+
+        # Винда сама хранит тип проца в этой системной переменной
+        $arch = $env:PROCESSOR_ARCHITECTURE
+        Write-Host "[INFO] Detected architecture: $arch"
+
+        # Настраиваем динамические ссылки на самый свежий релиз
+        if ($arch -eq "ARM64") {
+          Write-Host "[MATCH] Target is ARM64. Setting up native ARM version."
+          $url = "https://github.com/zen-browser/desktop/releases/latest/download/zen.installer-arm64.exe"
+          $fileName = "zen.installer-arm64.exe"
+        } else {
+          Write-Host "[MATCH] Target is x64. Setting up standard database version."
+          $url = "https://github.com/zen-browser/desktop/releases/latest/download/zen.installer.exe"
+          $fileName = "zen.installer.exe"
+        }
+
+        $installerPath = "$env:TEMP\$fileName"
+
+        Write-Host "[DOWNLOAD] Fetching latest Zen Browser from: $url"
+        Invoke-WebRequest -Uri $url -OutFile $installerPath
+
+        if (Test-Path $installerPath) {
+          Write-Host "[INSTALL] Running Zen Browser silent installer..."
+          try {
+            # Запуск тихой установки без вызова окон
+            Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait -NoNewWindow -ErrorAction Stop
+            Write-Host "[SUCCESS] Zen Browser ($arch) installed successfully!"
+            Remove-Item -Path $installerPath -Force
+          }
+          catch {
+            Write-Warning "Failed to install Zen Browser for $arch"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Warning "Failed to download Zen Browser installer for $arch"
+        }
+
+
     # ============================================================
     # STOP KNOWN UNWANTED SERVICES
     # ============================================================
@@ -1800,10 +1845,10 @@ runs:
 
         $chocoAllowPatterns = @(
         # Firefox
-        '(?i)^firefox($|-)'
+        #'(?i)^firefox($|-)'
 
         # Mozilla Maintenance Service
-        '(?i)^mozilla-maintenance-service($|-)'
+        #'(?i)^mozilla-maintenance-service($|-)'
 
         # 7-Zip
         '(?i)^7zip($|-)'
@@ -1856,7 +1901,7 @@ runs:
         '(?i)^aria2($|-)'
 
         # cmake
-        '(?i)^cmake.install($|-)'
+        #'(?i)^cmake.install($|-)'
         
         # PowerShell
          '(?i)^powershell($|-)'
@@ -1993,7 +2038,7 @@ runs:
     # ALLOWLIST CLEANUP
     #
     # KEEP:
-    #   Firefox
+    #   Firefox (NOT KEEP)
     #   Visual Studio
     #   Git
     #   7-Zip
@@ -2025,8 +2070,8 @@ runs:
           # FIREFOX
           # ------------------------------------------------------
 
-          '(?i)\bMozilla Firefox\b',
-          '(?i)^Firefox\b',
+          #'(?i)\bMozilla Firefox\b',
+          #'(?i)^Firefox\b',
 
           # ------------------------------------------------------
           # Enable UEFI SecureBoot Tool
@@ -2035,6 +2080,7 @@ runs:
           '(?i)^SecureBoot($|-)'
           '(?i)^UEFI($|-)'
           '(?i)^TPM($|-)'
+          
           # ------------------------------------------------------
           # 7-ZIP
           # ------------------------------------------------------
