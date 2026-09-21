@@ -1456,6 +1456,8 @@ runs:
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
+        taskkill /f /im OneDrive.Sync.Service.exe
+        taskkill /f /im OneDrive.exe
         $ErrorActionPreference = 'Continue'
 
         $path = "$env:USERPROFILE\AppData\Local\Microsoft\OneDrive"
