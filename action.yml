@@ -1816,14 +1816,14 @@ runs:
         # Твой универсальный путь через переменную диска
         basePath = "env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
 
-        if (Test-Path -LiteralPath \$basePath) {
+        if (Test-Path -LiteralPath $basePath) {
           # Ищем именно ПАПКИ (Directory), в имени которых есть слово Python
           pythonFolders = Get-ChildItem -LiteralPath basePath -Directory -Filter "*Python*" -ErrorAction SilentlyContinue
 
           if ($pythonFolders) {
             foreach (folder in pythonFolders) {
               path = folder.FullName
-              Write-Host "[REMOVE] \$path"
+              Write-Host "[REMOVE] $path"
 
               try {
                 Remove-Item `
@@ -1832,10 +1832,10 @@ runs:
                   -Force `
                   -ErrorAction Stop
 
-                Write-Host "[REMOVED] \$path"
+                Write-Host "[REMOVED] $path"
               }
               catch {
-                Write-Warning "Failed to completely remove \$path"
+                Write-Warning "Failed to completely remove $path"
                 Write-Warning $_
               }
             }
