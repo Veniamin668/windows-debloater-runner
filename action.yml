@@ -46,7 +46,12 @@ inputs:
     description: 'Kill WWAHost and WSL trigger(oobe privacy settings)?'
     required: false
     default: 'true'
-
+    
+  wsl-rename:
+    description: 'Kill WSL trigger?'
+    required: false
+    default: 'false'
+    
   npm-del:
     description: 'Remove C:\npm folder?'
     required: false
@@ -56,45 +61,67 @@ runs:
   using: composite
   steps:
 
-    - name: Hardcore OOBE and WSL Kill and Suppressor
+    - name: Hardcore OOBE Suppressor
+      if: ${{ inputs.oobe-disable == 'true' }}
       shell: pwsh
       run: |
-        if ("${{ inputs.oobe-disable }}" -eq "true") {
-            Write-Host "=== Вырезаем WWAHost и WSL процессы и бинарники ==="
-            $sys32 = "$env:windir\System32"
-            $targets = @("WWAHost.exe", "wsl.exe")
+        $ErrorActionPreference = 'Continue'
+        Write-Host "=== Вырезаем WWAHost (OOBE) ==="
+        
+        $filePath = "$env:windir\System32\WWAHost.exe"
+        
+        # Гасим процесс в памяти
+        Stop-Process -Name "WWAHost" -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+
+        if (Test-Path -LiteralPath $filePath) {
+            Write-Host "Файл найден: WWAHost.exe. Перехватываем права..."
+            takeown /f $filePath /a > $null
+            icacls $filePath /grant *S-1-5-32-544:F > $null
             
-            # ШАГ 1: Жестко гасим процессы в памяти, чтобы закрыть висящие окна
-            Write-Host "Принудительно завершаем активные процессы..."
-            Stop-Process -Name "WWAHost" -Force -ErrorAction SilentlyContinue
-            Stop-Process -Name "wsl" -Force -ErrorAction SilentlyContinue
-            Start-Sleep -Seconds 2 # Даем винде пару секунд на освобождение файлов
+            Write-Host "Переименовываем файл..."
+            Rename-Item -Path $filePath -NewName "WWAHost.exe123" -Force -ErrorAction SilentlyContinue
             
-            # ШАГ 2: Забираем права и переименовываем файлы в System32
-            foreach ($file in $targets) {
-                $filePath = "$sys32\$file"
-                
-                if (Test-Path $filePath) {
-                    Write-Host "Файл найден: $file. Перехватываем права владельца..."
-                    takeown /f $filePath /a > $null
-                    icacls $filePath /grant *S-1-5-32-544:F > $null
-                    
-                    Write-Host "Переименовываем файл..."
-                    Rename-Item -Path $filePath -NewName "$($file)123" -Force -ErrorAction SilentlyContinue
-                    
-                    if (Test-Path "$filePath`123") {
-                        Write-Host "[УСПЕХ] $file успешно переименован в $($file)123!"
-                    } else {
-                        Write-Host "[ВНИМАНИЕ] Не удалось переименовать $file. Возможно, процесс еще держит файл."
-                    }
-                } else {
-                    Write-Host "Файл $file уже отсутствует или переименован."
-                }
+            if (Test-Path -LiteralPath "$filePath`123") {
+                Write-Host "[УСПЕХ] WWAHost.exe успешно переименован в WWAHost.exe123!"
+            } else {
+                Write-Host "[ВНИМАНИЕ] Не удалось переименовать WWAHost.exe"
             }
-            
-            # Наш коронный сейв от падения экшена
-            exit 0
+        } else {
+            Write-Host "WWAHost.exe уже отсутствует или переименован."
         }
+        exit 0
+
+    - name: WSL Kill and Renamer
+      if: ${{ inputs.wsl-rename == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        Write-Host "=== Вырезаем WSL бинарники и процессы ==="
+        
+        $filePath = "$env:windir\System32\wsl.exe"
+        
+        # Гасим процесс, чтобы закрыть вылезшие окна
+        Stop-Process -Name "wsl" -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+
+        if (Test-Path -LiteralPath $filePath) {
+            Write-Host "Файл найден: wsl.exe. Перехватываем права..."
+            takeown /f $filePath /a > $null
+            icacls $filePath /grant *S-1-5-32-544:F > $null
+            
+            Write-Host "Переименовываем файл..."
+            Rename-Item -Path $filePath -NewName "wsl.exe123" -Force -ErrorAction SilentlyContinue
+            
+            if (Test-Path -LiteralPath "$filePath`123") {
+                Write-Host "[УСПЕХ] wsl.exe успешно переименован в wsl.exe123!"
+            } else {
+                Write-Host "[ВНИМАНИЕ] Не удалось переименовать wsl.exe"
+            }
+        } else {
+            Write-Host "wsl.exe уже отсутствует или переименован."
+        }
+        exit 0
 
     - name: Remove unwanted UWP applications
       if: inputs.uwp-del == 'true'
