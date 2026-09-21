@@ -1485,34 +1485,54 @@ runs:
     # REMOVE Temp
     # ============================================================
 
-    - name: Remove Temp
+    - name: Remove Temp contents
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
-        $ErrorActionPreference = 'Continue'
+        \$ErrorActionPreference = 'Continue'
 
-        $path = "$env:TEMP"
+        # Собираем в массив пользовательский Temp и системный Windows Temp
+        \(tempPaths = @(\)env:TEMP,
+          "\$env:SYSTEMDRIVE\Windows\Temp"
+        )
 
-        if (Test-Path -LiteralPath $path) {
-          Write-Host "[REMOVE] $path"
+        foreach (\(basePath in\)tempPaths) {
+          if (Test-Path -LiteralPath \$basePath) {
+            Write-Host "[SCANNING TEMP] \$basePath"
 
-          try {
-            Remove-Item `
-              -LiteralPath $path `
-              -Recurse `
-              -Force `
-              -ErrorAction Stop
+            # Вытаскиваем все элементы ВНУТРИ папки Temp
+            \(tempItems = Get-ChildItem -LiteralPath\)basePath -Force -ErrorAction SilentlyContinue
 
-            Write-Host "[REMOVED] $path"
+            if (\$tempItems) {
+              foreach (\(item in\)tempItems) {
+                \(path =\)item.FullName
+                Write-Host "[REMOVE] \$path"
+
+                try {
+                  Remove-Item `
+                    -LiteralPath $path `
+                    -Recurse `
+                    -Force `
+                    -ErrorAction Stop
+
+                  Write-Host "[REMOVED] \$path"
+                }
+                catch {
+                  # В Temp всегда будут заблокированные файлы текущих процессов.
+                  # Выводим предупреждение, но не роняем скрипт.
+                  Write-Warning "Skipped (File is locked or busy): \$path"
+                }
+              }
+            }
+            else {
+              Write-Host "[EMPTY] \$basePath is already clean"
+            }
           }
-          catch {
-            Write-Warning "Failed to completely remove $path"
-            Write-Warning $_
+          else {
+            Write-Host "[NOT FOUND] Temp Path: \$basePath"
           }
         }
-        else {
-          Write-Host "[NOT FOUND] $path"
-        }
+
         
     # ============================================================
     # REMOVE runner folder in Program Data
@@ -1678,7 +1698,88 @@ runs:
         else {
           Write-Host "[NOT FOUND] $path"
         }
-        
+
+    - name: Remove Python folders from Start Menu
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        \$ErrorActionPreference = 'Continue'
+
+        # Твой универсальный путь через переменную диска
+        basePath = "env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
+
+        if (Test-Path -LiteralPath \$basePath) {
+          # Ищем именно ПАПКИ (Directory), в имени которых есть слово Python
+          pythonFolders = Get-ChildItem -LiteralPath basePath -Directory -Filter "*Python*" -ErrorAction SilentlyContinue
+
+          if (\$pythonFolders) {
+            foreach (folder in pythonFolders) {
+              path = folder.FullName
+              Write-Host "[REMOVE] \$path"
+
+              try {
+                Remove-Item `
+                  -LiteralPath $path `
+                  -Recurse `
+                  -Force `
+                  -ErrorAction Stop
+
+                Write-Host "[REMOVED] \$path"
+              }
+              catch {
+                Write-Warning "Failed to completely remove \$path"
+                Write-Warning \$_
+              }
+            }
+          }
+          else {
+            Write-Host "[NOT FOUND] Any Python folders in \$basePath"
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] Start Menu Base Path: \$basePath"
+        }
+
+    - name: Remove Edge shortcuts from Start Menu
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        \$ErrorActionPreference = 'Continue'
+
+        # Путь к программам меню Пуск
+        basePath = "env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
+
+        if (Test-Path -LiteralPath \$basePath) {
+          # Ищем именно ФАЙЛЫ ярлыков, в имени которых упоминается Edge
+          edgeShortcuts = Get-ChildItem -LiteralPath basePath -File -Filter "*Edge*" -Recurse -ErrorAction SilentlyContinue
+
+          if (\$edgeShortcuts) {
+            foreach (shortcut in edgeShortcuts) {
+              path = shortcut.FullName
+              Write-Host "[REMOVE] \$path"
+
+              try {
+                Remove-Item `
+                  -LiteralPath \$path `
+                  -Force `
+                  -ErrorAction Stop
+
+                Write-Host "[REMOVED] \$path"
+              }
+              catch {
+                Write-Warning "Failed to completely remove \$path"
+                Write-Warning \$_
+              }
+            }
+          }
+          else {
+            Write-Host "[NOT FOUND] Any Edge shortcuts in \$basePath"
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] Start Menu Base Path: \$basePath"
+        }
+
     - name: Remove Chocolatey packages
       if: ${{ inputs.choco-del == 'true' }}
       shell: pwsh
