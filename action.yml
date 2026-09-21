@@ -1628,54 +1628,20 @@ runs:
     # REMOVE Temp
     # ============================================================
 
-    - name: Remove Temp contents
+    - name: Remove Temp contents (Hardcore Edition)
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
-
-        # Собираем в массив пользовательский Temp и системный Windows Temp
-        $tempPaths = @($env:TEMP,
-            "$env:SYSTEMDRIVE\Windows\Temp"
-        )
-
-        foreach ($basePath in$tempPaths) {
-          if (Test-Path -LiteralPath $basePath) {
-            Write-Host "[SCANNING TEMP] $basePath"
-
-            # Вытаскиваем все элементы ВНУТРИ папки Temp
-            $tempItems = Get-ChildItem -LiteralPath$basePath -Force -ErrorAction SilentlyContinue
-
-            if ($tempItems) {
-              foreach ($item in$tempItems) {
-                $path =$item.FullName
-                Write-Host "[REMOVE] $path"
-
-                try {
-                  Remove-Item `
-                    -LiteralPath $path `
-                    -Recurse `
-                    -Force `
-                    -ErrorAction Stop
-
-                  Write-Host "[REMOVED] $path"
-                }
-                catch {
-                  # В Temp всегда будут заблокированные файлы текущих процессов.
-                  # Выводим предупреждение, но не роняем скрипт.
-                  Write-Warning "Skipped (File is locked or busy): $path"
-                }
-              }
-            }
-            else {
-              Write-Host "[EMPTY] $basePath is already clean"
-            }
-          }
-          else {
-            Write-Host "[NOT FOUND] Temp Path: $basePath"
-          }
-        }
         
+        Write-Host "[REMOVE] Cleaning User Temp..."
+        Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+
+        Write-Host "[REMOVE] Cleaning System Temp..."
+        Remove-Item -Path "$env:SYSTEMDRIVE\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+        
+        Write-Host "[SUCCESS] Temp directories purged!"
+
     # ============================================================
     # REMOVE runner folder in Program Data
     # ============================================================
