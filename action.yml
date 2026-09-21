@@ -485,7 +485,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = '%SYSTEMDRIVE%\hostedtoolcache'
+        $path = '$env:SYSTEMDRIVE\hostedtoolcache'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
