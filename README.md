@@ -98,7 +98,7 @@ Add the action to your workflow:
           path-clean: 'true'
           del-installer-user: 'true'
           oobe-disable: 'true'
-          wsl-del: 'true'
+          wsl-rename: 'true'
           npm-del: 'true'
 ```
 Set enable to 'false' to disable the cleanup
