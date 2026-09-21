@@ -480,7 +480,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\hostedtoolcache'
+        $path = '%SYSTEMDRIVE%\hostedtoolcache'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -514,7 +514,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $base = 'C:\Program Files (x86)'
+        $base = '%SYSTEMDRIVE%\Program Files (x86)'
 
         if (-not (Test-Path -LiteralPath $base)) {
           Write-Host "[NOT FOUND] $base"
@@ -558,7 +558,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\actionarchivecache'
+        $path = '%SYSTEMDRIVE%\actionarchivecache'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -591,7 +591,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\ghcup'
+        $path = '%SYSTEMDRIVE%\ghcup'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -624,7 +624,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\Julia'
+        $path = '%SYSTEMDRIVE%\Julia'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -657,7 +657,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\mingw32'
+        $path = '%SYSTEMDRIVE%\mingw32'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -690,7 +690,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\mingw64'
+        $path = '%SYSTEMDRIVE%\mingw64'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -723,7 +723,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\msys64'
+        $path = '%SYSTEMDRIVE%\msys64'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -756,7 +756,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\selenium'
+        $path = '%SYSTEMDRIVE%\selenium'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -789,7 +789,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\SeleniumWebDrivers'
+        $path = '%SYSTEMDRIVE%\SeleniumWebDrivers'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -822,7 +822,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\Strawberry'
+        $path = '%SYSTEMDRIVE%\Strawberry'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -855,7 +855,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\vcpkg'
+        $path = '%SYSTEMDRIVE%\vcpkg'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -888,7 +888,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\Program Files\dotnet'
+        $path = '%SYSTEMDRIVE%\Program Files\dotnet'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -921,7 +921,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\Program Files (x86)\dotnet'
+        $path = '%SYSTEMDRIVE%\Program Files (x86)\dotnet'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -954,7 +954,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\Modules'
+        $path = '%SYSTEMDRIVE%\Modules'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -987,7 +987,7 @@ runs:
       run: |
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\Program Files (x86)\Windows Kits'
+        $path = '%SYSTEMDRIVE%\Program Files (x86)\Windows Kits'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1023,7 +1023,7 @@ runs:
         taskkill /f /im msedge.exe
         $ErrorActionPreference = 'Continue'
 
-        $path = 'C:\Program Files (x86)\Microsoft'
+        $path = '%SYSTEMDRIVE%\Program Files (x86)\Microsoft'
 
         if (Test-Path -LiteralPath $path) {
           Write-Host "[REMOVE] $path"
@@ -1046,6 +1046,40 @@ runs:
           Write-Host "[NOT FOUND] $path"
         }
         exit 0
+
+    # ============================================================
+    # REMOVE C:\npm
+    # ============================================================
+
+    - name: Remove npm folder in %systemdrive%
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = '%SYSTEMDRIVE\npm'
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
     - name: Remove Chocolatey packages
       if: ${{ inputs.choco-del == 'true' }}
       shell: pwsh
