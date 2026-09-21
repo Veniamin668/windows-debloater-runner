@@ -63,7 +63,27 @@ C:\vcpkg
 C:\Program Files\dotnet
 C:\Program Files (x86)\dotnet
 C:\Program Files (x86)\Windows Kits
-C:\Program Files (x86)\Microsoft (Edge Attempt 1)
+C:\Program Files (x86)\Microsoft (Edge)
+C:\npm
+%SYSTEMDRIVE%\aliyun-cli
+%SYSTEMDRIVE%\Program Files\Android (Attemp 1)
+%SYSTEMDRIVE%\Program Files\LLVM
+%SYSTEMDRIVE%\Program Files\Microsoft SQL Server
+%SYSTEMDRIVE%\Program Files (x86)\Microsoft SQL Server
+%SYSTEMDRIVE%\ProgramData\Package Cache
+%SYSTEMDRIVE%\ProgramData\pipelinesagent
+%USERPROFILE%\.rustup
+%USERPROFILE%\.dotnet
+%USERPROFILE%\.cargo
+%USERPROFILE%\.aliyun
+%USERPROFILE\AppData\Local\Microsoft\OneDrive
+%TEMP%  (Attemp 1)
+%SYSTEMDRIVE%\ProgramData\runner
+%SYSTEMDRIVE%\Tools
+%SYSTEMDRIVE%\Users\Default\.cargo
+%SYSTEMDRIVE%\Users\Default\.rustup
+%SYSTEMDRIVE%\Users\Default\.dotnet
+
 ```
 Usage
 
@@ -79,6 +99,7 @@ Add the action to your workflow:
           path-clean: 'true'
           del-installer-user: 'true'
           oobe-disable: 'true'
+          npm-del: 'true'
 ```
 Set enable to 'false' to disable the cleanup
 azure-del false to disable delete Azure modules folder 
@@ -91,6 +112,7 @@ del-installer-user removes the "installer" user and their folder, which takes up
 
 oobe-disable Renames the WWAHost.exe and wsl.exe files by appending "123" to their names to bypass the OOBE privacy settings screen and the pop-up prompting a WSL update.
 
+npm-del remove %SYSTEMDRIVE%\npm folder
 
 How it works
 
