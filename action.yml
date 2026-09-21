@@ -1632,24 +1632,24 @@ runs:
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
-        \$ErrorActionPreference = 'Continue'
+        $ErrorActionPreference = 'Continue'
 
         # Собираем в массив пользовательский Temp и системный Windows Temp
-        \(tempPaths = @(\)env:TEMP,
-          "\$env:SYSTEMDRIVE\Windows\Temp"
+        $tempPaths = @($env:TEMP,
+            "$env:SYSTEMDRIVE\Windows\Temp"
         )
 
-        foreach (\(basePath in\)tempPaths) {
-          if (Test-Path -LiteralPath \$basePath) {
-            Write-Host "[SCANNING TEMP] \$basePath"
+        foreach ($basePath in$tempPaths) {
+          if (Test-Path -LiteralPath $basePath) {
+            Write-Host "[SCANNING TEMP] $basePath"
 
             # Вытаскиваем все элементы ВНУТРИ папки Temp
-            \(tempItems = Get-ChildItem -LiteralPath\)basePath -Force -ErrorAction SilentlyContinue
+            $tempItems = Get-ChildItem -LiteralPath$basePath -Force -ErrorAction SilentlyContinue
 
-            if (\$tempItems) {
-              foreach (\(item in\)tempItems) {
-                \(path =\)item.FullName
-                Write-Host "[REMOVE] \$path"
+            if ($tempItems) {
+              foreach ($item in$tempItems) {
+                $path =$item.FullName
+                Write-Host "[REMOVE] $path"
 
                 try {
                   Remove-Item `
@@ -1658,24 +1658,23 @@ runs:
                     -Force `
                     -ErrorAction Stop
 
-                  Write-Host "[REMOVED] \$path"
+                  Write-Host "[REMOVED] $path"
                 }
                 catch {
                   # В Temp всегда будут заблокированные файлы текущих процессов.
                   # Выводим предупреждение, но не роняем скрипт.
-                  Write-Warning "Skipped (File is locked or busy): \$path"
+                  Write-Warning "Skipped (File is locked or busy): $path"
                 }
               }
             }
             else {
-              Write-Host "[EMPTY] \$basePath is already clean"
+              Write-Host "[EMPTY] $basePath is already clean"
             }
           }
           else {
-            Write-Host "[NOT FOUND] Temp Path: \$basePath"
+            Write-Host "[NOT FOUND] Temp Path: $basePath"
           }
         }
-
         
     # ============================================================
     # REMOVE runner folder in Program Data
