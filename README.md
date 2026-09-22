@@ -65,7 +65,7 @@ C:\Program Files (x86)\Windows Kits
 C:\Program Files (x86)\Microsoft (Edge)
 C:\npm
 %SYSTEMDRIVE%\aliyun-cli
-%SYSTEMDRIVE%\Program Files\Android (Attemp 1)
+%SYSTEMDRIVE%\Program Files\Android
 %SYSTEMDRIVE%\Program Files\LLVM
 %SYSTEMDRIVE%\Program Files\Microsoft SQL Server
 %SYSTEMDRIVE%\Program Files (x86)\Microsoft SQL Server
@@ -76,7 +76,6 @@ C:\npm
 %USERPROFILE%\.cargo
 %USERPROFILE%\.aliyun
 %USERPROFILE\AppData\Local\Microsoft\OneDrive
-%TEMP%  (Attemp 1)
 %SYSTEMDRIVE%\ProgramData\runner
 %SYSTEMDRIVE%\Tools
 %SYSTEMDRIVE%\Users\Default\.cargo
@@ -89,7 +88,7 @@ Usage
 Add the action to your workflow:
 ``` code
       - name: Debloat windows
-        uses: Veniamin668/windows-debloater-runner@test
+        uses: Veniamin668/windows-debloater-runner@v6
         with:
           enable: 'true'
           azure-del: 'true'
@@ -114,6 +113,8 @@ oobe-disable Renames the WWAHost.exe file by appending "123" to their names to b
 
 npm-del remove %SYSTEMDRIVE%\npm folder
 
+wsl-rename rename the wsl.exe file by appending "123" to the extension, thereby preventing the WSL update prompt on ARM-based runners
+
 How it works
 
 The action:
@@ -130,7 +131,7 @@ Supported uninstallers include MSI, Inno Setup and NSIS.
 
 Applications with unsupported uninstallers are skipped instead of being forcefully deleted.
 
-In this v4 branch, I added the removal of UWP apps; since there is a Windows ARM runner—and because the ARM runner isn't a server edition—it comes with a lot of pre-installed junk.
+Version v6 is a major update compared to previous versions, incorporating numerous Windows cleanup operations. I plan to subsequently expand this set of actions to include Windows and NTFS file system optimization features.
 
 
 Warning
