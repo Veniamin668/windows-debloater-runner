@@ -132,24 +132,7 @@ runs:
         Write-Host "   NO VARIABLES EDITION                                     "
         Write-Host "======================================================================"
 
-        Stop-Process -Name "firefox" -Force -ErrorAction SilentlyContinue
-
-        # Запускаем деинсталлятор напрямую без объявления локальных переменных
-        if (Test-Path -LiteralPath "$env:SystemDrive\Program Files\Mozilla Firefox\uninstall\helper.exe") {
-            Write-Host "[REMOVE] Found helper.exe. Triggering detached silent uninstall..."
-            Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$env:SystemDrive\Program Files\Mozilla Firefox\uninstall\helper.exe`" /S" -NoNewWindow
-            Start-Sleep -Seconds 3
-        }
-
-        Write-Host "[REMOVE] Blasting all residual Mozilla profiles and caches..."
-        Remove-Item -Path "$env:ProgramData\Mozilla" -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -Path "$env:LocalAppData\Mozilla" -Recurse -Force -ErrorAction SilentlyContinue
-        Remove-Item -Path "$env:AppData\Mozilla" -Recurse -Force -ErrorAction SilentlyContinue
-        
-        if (Test-Path -LiteralPath "$env:SystemDrive\Program Files\Mozilla Firefox") {
-            Remove-Item -Path "$env:SystemDrive\Program Files\Mozilla Firefox\*" -Recurse -Force -ErrorAction SilentlyContinue
-        }
-
+        Start-Process -FilePath "$env:SYSTEMDRIVE\Program Files\Mozilla Firefox\uninstall\helper.exe" -ArgumentList "/S" -Wait -NoNewWindow -ErrorAction SilentlyContinue
         Write-Host "======================================================================"
         Write-Host "   [SUCCESS] Firefox completely eradicated from disk!                "
         Write-Host "======================================================================"
@@ -1883,7 +1866,28 @@ runs:
           Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
         }
 
+    - name: Remove OneDrive shortcut from Start Menu
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        $basePath = "$env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
 
+        if (Test-Path -LiteralPath $basePath) {
+          Write-Host "[SCANNING START MENU] Looking for OneDrive shortcuts in $basePath"
+          
+          # Находим именно файлы ярлыков OneDrive и стираем их напрямую
+          Get-ChildItem -Path $basePath -Recurse -File -Filter "*OneDrive*" -ErrorAction SilentlyContinue | ForEach-Object {
+              $path = $_.FullName
+              Write-Host "[REMOVE] $path"
+              Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+              Write-Host "[REMOVED] $path"
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
+        }
+        
     - name: Remove Chocolatey packages
       if: ${{ inputs.choco-del == 'true' }}
       shell: pwsh
@@ -1901,11 +1905,6 @@ runs:
           # ========================================================
 
         $chocoAllowPatterns = @(
-        # Firefox
-        #'(?i)^firefox($|-)'
-
-        # Mozilla Maintenance Service
-        #'(?i)^mozilla-maintenance-service($|-)'
 
         # 7-Zip
         '(?i)^7zip($|-)'
@@ -2098,7 +2097,6 @@ runs:
     # ALLOWLIST CLEANUP
     #
     # KEEP:
-    #   Firefox (NOT KEEP)
     #   Visual Studio
     #   Git
     #   7-Zip
@@ -2125,13 +2123,6 @@ runs:
         # ========================================================
 
         $allowPatterns = @(
-
-          # ------------------------------------------------------
-          # FIREFOX
-          # ------------------------------------------------------
-
-          #'(?i)\bMozilla Firefox\b',
-          #'(?i)^Firefox\b',
 
           # ------------------------------------------------------
           # Enable UEFI SecureBoot Tool
