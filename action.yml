@@ -128,43 +128,32 @@ runs:
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
-        
         Write-Host "======================================================================"
-        Write-Host "   ERADICATING MOZILLA FIREFOX FROM DISK       "
+        Write-Host "   NO VARIABLES EDITION                                     "
         Write-Host "======================================================================"
 
-        # 1. Жестко гасим процессы
         Stop-Process -Name "firefox" -Force -ErrorAction SilentlyContinue
 
-        # Путь к деинсталлятору
-        helperPath = "env:SystemDrive\Program Files\Mozilla Firefox\uninstall\helper.exe"
-
-        if (Test-Path -LiteralPath $helperPath) {
+        # Запускаем деинсталлятор напрямую без объявления локальных переменных
+        if (Test-Path -LiteralPath "$env:SystemDrive\Program Files\Mozilla Firefox\uninstall\helper.exe") {
             Write-Host "[REMOVE] Found helper.exe. Triggering detached silent uninstall..."
-            
-            $arguments = "/c `"$helperPath`" /S"
-            Start-Process -FilePath "cmd.exe" -ArgumentList $arguments -NoNewWindow
-            
-            # Даем ему 3 секунды фоном покрутиться, пока мы готовим шредер папок
+            Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$env:SystemDrive\Program Files\Mozilla Firefox\uninstall\helper.exe`" /S" -NoNewWindow
             Start-Sleep -Seconds 3
         }
 
         Write-Host "[REMOVE] Blasting all residual Mozilla profiles and caches..."
-        
-        # 2. Выжигаем все папки напрямую через классический стиль Remove-Item со звёздочкой
-        # Флаг SilentlyContinue гарантирует, что даже если файл заблокирован или папки нет — шаг НЕ УПАДЕТ
         Remove-Item -Path "$env:ProgramData\Mozilla" -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path "$env:LocalAppData\Mozilla" -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path "$env:AppData\Mozilla" -Recurse -Force -ErrorAction SilentlyContinue
         
-        # Дополнительно зачищаем саму папку программы, если там что-то осталось
         if (Test-Path -LiteralPath "$env:SystemDrive\Program Files\Mozilla Firefox") {
             Remove-Item -Path "$env:SystemDrive\Program Files\Mozilla Firefox\*" -Recurse -Force -ErrorAction SilentlyContinue
         }
 
         Write-Host "======================================================================"
-        Write-Host "   [SUCCESS] Firefox step bypassed successfully without any errors!   "
+        Write-Host "   [SUCCESS] Firefox completely eradicated from disk!                "
         Write-Host "======================================================================"
+
 
     - name: Remove unwanted UWP applications
       if: inputs.uwp-del == 'true'
