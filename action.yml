@@ -128,103 +128,112 @@ runs:
         }
         exit 0
 
-    - name: Ultimate Windows Performance, NTFS & TrustedInstaller Service Purge
-      if: ${{ inputs.optimize == 'true' }}
+    - name: Install Hardcore Elevation Tool (gsudo)
+      if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
         Write-Host "======================================================================"
-        Write-Host "   [PERFORMANCE LAYER] INITIATING LOW-LEVEL OS & STORAGE SECTOR TWEAKS "
+        Write-Host "   [SETUP] DEPLOYING GSUDO VIA CHOCOLATEY FOR KERNEL BYPASS           "
+        Write-Host "======================================================================"
+        
+        # Ставим тихо утилиту повышения прав через шоколадку
+        choco install gsudo -y --no-progress >$null 2>&1
+        
+        # Перечитываем Path прямо в текущем процессе, чтобы система сразу его увидела
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+        
+        if (Get-Command gsudo.exe -ErrorAction SilentlyContinue) {
+            Write-Host "   [SUCCESS] gsudo is ready to bypass Windows security layers!" -ForegroundColor Green
+        }
         Write-Host "======================================================================"
 
-        # ==========================================
-        # ШАГ 1: ТВОИ КОРОННЫЕ ТВИКИ СИСТЕМЫ И ПИТАНИЯ (БЕЗ РЕБУТА!)
-        # ==========================================
+    - name: Low-Level Cloud PC & Hardware System Optimizer
+      if: ${{ inputs.enable == 'true' && inputs.optimize == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        Write-Host "======================================================================"
+        Write-Host "   [HARDWARE BOOST] EXECUTING STORAGE TRIM & CPU PRIORITIZATION      "
+        Write-Host "======================================================================"
+
+        # Перечитываем Path, чтобы намертво зафиксировать gsudo в сессии
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+
+        # СХЕМА ПИТАНИЯ: Врубаем максимальную производительность
         Write-Host " >> [TWEAK] Activating Ultimate Performance Power Plan..." -ForegroundColor Cyan
         powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
 
-        Write-Host " >> [NTFS TWEAK] Enforcing global DisableDeleteNotify (TRIM)..." -ForegroundColor Cyan
+        # NTFS ТВИКИ БЕЗ РЕБУТА: Отключаем DOS-имена (8.3) и метки времени доступа
+        Write-Host " >> [NTFS TWEAK] Tuning file system allocation structures..." -ForegroundColor Cyan
         fsutil behavior set disableDeleteNotify NTFS 0 >$null 2>&1
-
-        Write-Host " >> [NTFS TWEAK] Disabling 8.3 Short DOS Name Generation..." -ForegroundColor Cyan
         fsutil behavior set disable8dot3 1 >$null 2>&1
-
-        Write-Host " >> [NTFS TWEAK] Disabling Last Access Time Stamps..." -ForegroundColor Cyan
         fsutil behavior set disablelastaccess 1 >$null 2>&1
 
-        Write-Host "----------------------------------------------------------------------"
-        # ==========================================
-        # ШАГ 2: ДИНАМИЧЕСКИЙ TRIM ДЛЯ ВСЕХ ДИСКОВ (C:, D: и т.д.)
-        # ==========================================
-        Write-Host " >> [SCANNING] Detecting active storage volumes for dynamic optimize..."
+        # ДИНАМИЧЕСКИЙ TRIM: Ищем все активные диски (C:, D:) и оптимизируем SSD/NVMe
+        Write-Host " >> [SCANNING] Detecting active storage volumes for dynamic TRIM..." -ForegroundColor Cyan
         Get-Volume | Where-Object { $_.DriveLetter -and $_.FileSystem -eq "NTFS" } | ForEach-Object {
             $letter = $_.DriveLetter
-            $label = $_.FileSystemLabel
-            Write-Host " >> [VOLUME FOUND] Drive ${letter}: ($label) - Sending TRIM command..." -ForegroundColor Yellow
-            try {
-                defrag.exe "${letter}:" /L /U /V
-                Write-Host "    [STATUS] >> Drive ${letter}: optimized successfully!" -ForegroundColor Green
-            } catch {
-                Write-Warning "    Failed to fully optimize Volume ${letter}: $_"
-            }
+            try { defrag.exe "${letter}:" /L /U /V } catch {}
         }
 
-        Write-Host "----------------------------------------------------------------------"
-        # ==========================================
-        # ШАГ 3: ТОТАЛЬНЫЙ СНОС ЗООПАРКА СЛУЖБ ИЗ ULTRA_OPT.BAT ЧЕРЕЗ TI
-        # ==========================================
-        Write-Host " [TRUSTEDINSTALLER] Processing extreme service list from ultra_opt.bat..."
-
-        # Безопасный массив из твоего батника (Удалёнка и SENS полностью защищены!)
-        $junkServices = [ordered]@{
-            "WSearch"         = "Windows Search (Disk Indexer Bloat)"
-            "SysMain"         = "SysMain (SuperFetch Memory Agent)"
-            "PcaSvc"          = "Program Compatibility Assistant"
-            "WerSvc"          = "Windows Error Reporting"
-            "wscsvc"          = "Windows Security Center Service"
-            "WinDefend"       = "Windows Defender Antivirus Engine"
-            "Sense"           = "Windows Defender Advanced Threat Protection"
-            "Spooler"         = "Print Spooler Agent (Printer Bloat)"
-            "MapsBroker"      = "Downloaded Maps Manager"
-            "SensorService"   = "Sensor Core Service"
-            "SensorDataService" = "Sensor Data Analytics"
-            "SCardSvr"        = "Smart Card Support Agent"
-            "RetailDemo"      = "Windows Retail Demonstration"
-            "wlidsvc"         = "Windows Live Sign-In Assistant"
-            "WiaRpc"          = "Still Image Acquisition Event Broker"
-            "WpdUpdt"         = "Portable Device Enumerator Service"
-            "sihsvc"          = "Server-Initiated Healing Service"
-            "DiagTrack"       = "Connected User Experiences (Spyware)"
-            "DPS"             = "Diagnostic Policy Service"
-            "UsoSvc"          = "Update Orchestrator Service"
-            "wuauserv"        = "Windows Update Service"
-            "WaaSMedicSvc"    = "Windows Update Medics Service"
+        # CPU ТВИК ПОД ПЛАВНЫЙ RDP: Режим "Программы" (значение 2) для 60 FPS
+        Write-Host " >> [TWEAK] Adjusting Win32PrioritySeparation to foreground apps (2)..." -ForegroundColor Cyan
+        if (Get-Command gsudo.exe -ErrorAction SilentlyContinue) {
+            gsudo.exe --ti reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 2 /f >$null 2>&1
+        } else {
+            reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 2 /f >$null 2>&1
+        }
+        
+        # СЕТЕВОЙ ТВИК: Глушим Multimedia Throttling Index, чтобы поток летал без затыков
+        Write-Host " >> [TWEAK] Disabling network multimedia throttling profiles..." -ForegroundColor Cyan
+        if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile") {
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "NetworkThrottlingIndex" -Value 4294967295 -Force
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" -Name "SystemResponsiveness" -Value 0 -Force
         }
 
-        foreach ($id in $junkServices.Keys) {
-            $description = $junkServices[$id]
-            $exists = Get-Service -Name $id -ErrorAction SilentlyContinue
+        # ИНЪЕКЦИЯ IDENTITY ДЛЯ ПРИКОЛА И ТЕСТОВ CLOUD PC
+        Write-Host " >> [SPOOFING] Injecting Windows 365 Cloud PC architecture flags..." -ForegroundColor Cyan
+        if (Get-Command gsudo.exe -ErrorAction SilentlyContinue) {
+            gsudo.exe --ti reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CloudPC" /v "IsCloudPC" /t REG_DWORD /d 1 /f >$null 2>&1
+            gsudo.exe --ti reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CloudPC" /v "CloudPCProvider" /t REG_SZ /d "GitHub_Actions_Premium_Sandbox" /f >$null 2>&1
+            gsudo.exe --ti reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v "VisualFXSetting" /t REG_DWORD /d 2 /f >$null 2>&1
+            gsudo.exe --ti reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v "BPP" /t REG_DWORD /d 32 /f >$null 2>&1
+        }
 
-            if ($exists) {
-                Write-Host " >> [FREEZING VIA TI] $id -- ($description)" -ForegroundColor Cyan
+        Write-Host "======================================================================"
+        Write-Host "   [SUCCESS] Storage layer, Network and Cloud PC spoofing deployed!  "
+        Write-Host "======================================================================"
+
+    - name: TrustedInstaller Windows Defender Kernel Suppressor
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        Write-Host "======================================================================"
+        Write-Host "   [STAGE 3] SUPPRESSING ANTI-VIRUS CORE ENGINES VIA TI              "
+        Write-Host "======================================================================"
+        
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+        
+        # Точечно и хладнокровно гасим Защитника Windows и Sense, которые обычный админ остановить не может
+        $coreJunk = "WinDefend","Sense"
+        
+        $coreJunk | ForEach-Object {
+            $id = $_
+            if (Get-Service -Name $id -ErrorAction SilentlyContinue) {
+                Write-Host " >> [FREEZING VIA TI] $id -- (Windows Defender Security Engine)" -ForegroundColor Cyan
+                Stop-Service -Name $id -Force -ErrorAction SilentlyContinue > $null 2>&1
                 
-                # 1. Жестко гасим процесс службы в памяти
-                Stop-Service -Name $id -Force -ErrorAction SilentlyContinue >$null 2>&1
-                
-                # 2. Вызываем gsudo --ti для обхода защит ядра (особенно для WinDefend и Sense!)
-                gsudo.exe --ti sc.exe config $id start= disabled >$null 2>&1
-                
-                # 3. Твой коронный финальный аккорд из батника — жестко забиваем DWORD 4 в реестр через TI!
-                gsudo.exe --ti reg add "HKLM\SYSTEM\CurrentControlSet\Services\$id" /v Start /t REG_DWORD /d 4 /f >$null 2>&1
-                
-                Write-Host "    [STATUS] >> [MUTED] $id forced to value 4 (DEAD)." -ForegroundColor Green
-            } else {
-                Write-Host " >> [SKIP] $id -- Not found on this server platform." -ForegroundColor Gray
+                if (Get-Command gsudo.exe -ErrorAction SilentlyContinue) {
+                    gsudo.exe --ti sc.exe config $id start= disabled > $null 2>&1
+                    gsudo.exe --ti reg add "HKLM\SYSTEM\CurrentControlSet\Services\$id" /v Start /t REG_DWORD /d 4 /f >$null 2>&1
+                    Write-Host "    [MUTED] $id forced to DEAD state via TrustedInstaller." -ForegroundColor Green
+                }
             }
         }
         Write-Host "======================================================================"
-        Write-Host "   [SUCCESS] NTFS optimized, SSDs trimmed, and 22+ services killed!   "
-        Write-Host "======================================================================"
+
 
     - name: Purge Firefox completely
       if: ${{ inputs.enable == 'true' }}
