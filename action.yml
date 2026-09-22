@@ -2708,6 +2708,82 @@ runs:
     # FINAL VERIFICATION
     # ============================================================
 
+    - name: Purge Dead Applications from Registry (Ghost Apps Wipe)
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        
+        Write-Host "======================================================================"
+        Write-Host "   [GHOST PURGE] DETECTING AND WIPING DEAD APPLICATIONS FROM REGISTRY "
+        Write-Host "======================================================================"
+
+        # Массив веток реестра, где Windows прячет списки установленного софта
+        $registryPaths = @(
+            "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*",
+            "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"
+        )
+
+        Write-Host "[SCANNING] Analyzing install paths for broken applications..."
+        Write-Host "----------------------------------------------------------------------"
+
+        foreach ($path in $registryPaths) {
+            Get-ItemProperty -Path $path -ErrorAction SilentlyContinue | ForEach-Object {
+                $appName = $_.DisplayName
+                $registryKey = $_.PSChildName
+                $parentPath = $_.PSParentPath -replace "Microsoft.PowerShell.Core\\Registry::", ""
+                $fullKeyPath = "$parentPath\$registryKey"
+
+                # Нам интересны только те записи, у которых есть имя
+                if ($appName) {
+                    $installDir = $_.InstallLocation
+                    $uninstallStr = $_.UninstallString
+
+                    $isDead = $false
+                    $reason = ""
+
+                    # Проверка 1: Если указана папка установки, но её физически нет на диске
+                    if ($installDir -and -not (Test-Path -LiteralPath $installDir -ErrorAction SilentlyContinue)) {
+                        $isDead = $true
+                        $reason = "Missing InstallLocation: $installDir"
+                    }
+                    # Проверка 2: Если папки установки нет, проверяем сам файл деинсталлятора (первую часть строки до ключей)
+                    elseif ($uninstallStr) {
+                        # Выдергиваем чистый путь к .exe/.msi файлу (убираем кавычки и аргументы)
+                        if ($uninstallStr -match '^"([^"]+)"') { $exePath = $Matches[1] }
+                        else { $exePath = ($uninstallStr -split " ")[0] }
+
+                        if ($exePath -and $exePath -match "🔮SYSTEMDRIVE🔮|🔮windir🔮|Program Files" -and -not (Test-Path -LiteralPath $exePath -ErrorAction SilentlyContinue)) {
+                            $isDead = $true
+                            $reason = "Missing Uninstaller EXE: $exePath"
+                        }
+                    }
+
+                    # Если нашли мёртвую душу — выжигаем её нахрен из реестра!
+                    if ($isDead) {
+                        Write-Host "[GHOST FOUND] $appName" -ForegroundColor Yellow
+                        Write-Host "  Reason: $reason" -ForegroundColor Gray
+                        Write-Host "  Wiping Registry Key: $fullKeyPath" -ForegroundColor Cyan
+                        
+                        try {
+                            # Удаляем ветку реестра со всеми подразделами абсолютно молча
+                            Remove-Item -Path "Registry::$fullKeyPath" -Recurse -Force -ErrorAction Stop
+                            Write-Host "  [REMOVED] Ghost app successfully erased from Windows lists!" -ForegroundColor Green
+                        }
+                        catch {
+                            Write-Warning "  Failed to remove registry key: $fullKeyPath"
+                        }
+                        Write-Host "----------------------------------------------------------------------"
+                    }
+                }
+            }
+        }
+
+        Write-Host "======================================================================"
+        Write-Host "   [SUCCESS] Registry desynchronization fixed. All ghosts purged!     "
+        Write-Host "======================================================================"
+
     - name: Verify preserved software
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
