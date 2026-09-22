@@ -123,6 +123,71 @@ runs:
         }
         exit 0
 
+    - name: Purge Firefox completely
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        
+        Write-Host "======================================================================"
+        Write-Host "   DETECTING AND PURGING MOZILLA FIREFOX          "
+        Write-Host "======================================================================"
+
+        # 1. Зачищаем активный процесс, если он висит в памяти
+        Stop-Process -Name "firefox" -Force -ErrorAction SilentlyContinue
+
+        # Массив возможных путей к официальному деинсталлятору
+        $ffUninstallers = @(
+            "$env:SystemDrive\Program Files\Mozilla Firefox\uninstall\helper.exe",
+        )
+
+        # Проверяем и запускаем тихий снос
+        foreach ($uninstaller in $ffUninstallers) {
+            if (Test-Path -LiteralPath $uninstaller) {
+                Write-Host "[REMOVE] Found official helper.exe. Executing silent uninstall..."
+                try {
+                    # Флаг /S сносит браузер абсолютно бесшумно
+                    Start-Process -FilePath $uninstaller -ArgumentList "/S" -Wait -NoNewWindow -ErrorAction Stop
+                    Write-Host "[REMOVED] Official Firefox uninstaller finished."
+                }
+                catch {
+                    Write-Warning "Official helper stumbled: $_"
+                }
+            }
+        }
+
+        # Небольшая пауза, чтобы деинсталлятор успел сам себя стереть
+        Start-Sleep -Seconds 2
+
+        # 2. А теперь выжигаем ВСЕ скрытые хвосты, которые он за собой оставил!
+        $mozillaPaths = @(
+            "$env:SystemDrive\Program Files\Mozilla Firefox",
+            "$env:SystemDrive\Program Files (x86)\Mozilla Firefox",
+            "$env:ProgramData\Mozilla",
+            "$env:LocalAppData\Mozilla",
+            "$env:AppData\Mozilla",
+            "$env:SystemDrive\Users\Default\AppData\Local\Mozilla"
+        )
+
+        Write-Host "[SCANNING] Wiping residual Mozilla directories and profiles..."
+        foreach ($folder in $mozillaPaths) {
+            if (Test-Path -LiteralPath $folder) {
+                Write-Host "[REMOVE] Wiping leftover folder: $folder"
+                try {
+                    # Сносим жестко и рекурсивно
+                    Remove-Item -LiteralPath $folder -Recurse -Force -ErrorAction Stop
+                    Write-Host "[REMOVED] $folder -- COMPLETELY CLEANED!"
+                }
+                catch {
+                    Write-Warning "Failed to wipe folder: $folder. Skipping locked files."
+                }
+            }
+        }
+
+        Write-Host "======================================================================"
+        Write-Host "   [SUCCESS] Firefox has been completely erased from existence!       "
+        Write-Host "======================================================================"
+
     - name: Remove unwanted UWP applications
       if: inputs.uwp-del == 'true'
       shell: pwsh
