@@ -1643,7 +1643,7 @@ runs:
     # REMOVE Temp
     # ============================================================
 
-    - name: Remove Temp contents (Hardcore Edition)
+    - name: Remove Temp contents
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
