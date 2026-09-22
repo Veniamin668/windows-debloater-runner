@@ -204,7 +204,7 @@ runs:
         Write-Host "======================================================================"
         Write-Host "   [SUCCESS] Storage layer, Network and Cloud PC spoofing deployed!  "
         Write-Host "======================================================================"
-
+        exit 0
     - name: TrustedInstaller Windows Defender Kernel Suppressor
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
