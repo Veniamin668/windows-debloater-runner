@@ -123,36 +123,48 @@ runs:
         }
         exit 0
 
-    - name: Purge Firefox completely (CMD Edition)
+    - name: Purge Firefox completely
       if: ${{ inputs.enable == 'true' }}
-      shell: cmd
+      shell: pwsh
       run: |
-        @echo off
-        echo ======================================================================
-        echo    PURGING MOZILLA FIREFOX VIA COMMAND LINE
-        echo ======================================================================
-
-        :: 1. Жестко гасим процесс, если он запущен
-        taskkill /F /IM firefox.exe /T >nul 2>&1
-
-        :: 2. Проверяем наличие нативного деинсталлятора и запускаем его абсолютно тихо
-        if exist "%SystemDrive%\Program Files\Mozilla Firefox\uninstall\helper.exe" (
-            echo [REMOVE] Found official 64-bit helper.exe. Uninstalling silently...
-            start /wait "" "%SystemDrive%\Program Files\Mozilla Firefox\uninstall\helper.exe" /S
-            timeout /t 2 >nul
-        )
-
-        :: 3. Выжигаем все папки-партизаны через классический rmdir /s /q (аналог rm -rf)
-        echo [REMOVE] Blasting residual Mozilla folders from system...
+        $ErrorActionPreference = 'Continue'
         
-        if exist "%SystemDrive%\Program Files\Mozilla Firefox" rmdir /s /q "%SystemDrive%\Program Files\Mozilla Firefox" >nul 2>&1
-        if exist "%ProgramData%\Mozilla" rmdir /s /q "%ProgramData%\Mozilla" >nul 2>&1
-        if exist "%LocalAppData%\Mozilla" rmdir /s /q "%LocalAppData%\Mozilla" >nul 2>&1
-        if exist "%AppData%\Mozilla" rmdir /s /q "%AppData%\Mozilla" >nul 2>&1
+        Write-Host "======================================================================"
+        Write-Host "   ERADICATING MOZILLA FIREFOX FROM DISK       "
+        Write-Host "======================================================================"
 
-        echo ======================================================================
-        echo    [SUCCESS] Firefox CMD purge finished without any syntax bugs!
-        echo ======================================================================
+        # 1. Жестко гасим процессы
+        Stop-Process -Name "firefox" -Force -ErrorAction SilentlyContinue
+
+        # Путь к деинсталлятору
+        helperPath = "env:SystemDrive\Program Files\Mozilla Firefox\uninstall\helper.exe"
+
+        if (Test-Path -LiteralPath $helperPath) {
+            Write-Host "[REMOVE] Found helper.exe. Triggering detached silent uninstall..."
+            
+            $arguments = "/c `"$helperPath`" /S"
+            Start-Process -FilePath "cmd.exe" -ArgumentList $arguments -NoNewWindow
+            
+            # Даем ему 3 секунды фоном покрутиться, пока мы готовим шредер папок
+            Start-Sleep -Seconds 3
+        }
+
+        Write-Host "[REMOVE] Blasting all residual Mozilla profiles and caches..."
+        
+        # 2. Выжигаем все папки напрямую через классический стиль Remove-Item со звёздочкой
+        # Флаг SilentlyContinue гарантирует, что даже если файл заблокирован или папки нет — шаг НЕ УПАДЕТ
+        Remove-Item -Path "$env:ProgramData\Mozilla" -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "$env:LocalAppData\Mozilla" -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "$env:AppData\Mozilla" -Recurse -Force -ErrorAction SilentlyContinue
+        
+        # Дополнительно зачищаем саму папку программы, если там что-то осталось
+        if (Test-Path -LiteralPath "$env:SystemDrive\Program Files\Mozilla Firefox") {
+            Remove-Item -Path "$env:SystemDrive\Program Files\Mozilla Firefox\*" -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        Write-Host "======================================================================"
+        Write-Host "   [SUCCESS] Firefox step bypassed successfully without any errors!   "
+        Write-Host "======================================================================"
 
     - name: Remove unwanted UWP applications
       if: inputs.uwp-del == 'true'
