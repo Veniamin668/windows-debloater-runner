@@ -239,12 +239,12 @@ runs:
 
         foreach ($ServiceName in $ServicesToDisable) {
             Write-Host ""
-            Write-Host "========== $ServiceName ==========" -ForegroundColor Cyan
+            Write-Host "========== ${ServiceName} ==========" -ForegroundColor Cyan
 
             $Service = Get-CimInstance Win32_Service -Filter "Name='$ServiceName'" -ErrorAction SilentlyContinue
 
             if ($null -eq $Service) {
-                Write-Host "[!] Служба не найдена: $ServiceName" -ForegroundColor DarkYellow
+                Write-Host "[!] Служба не найдена: ${ServiceName}" -ForegroundColor DarkYellow
                 continue
             }
 
@@ -265,7 +265,7 @@ runs:
                 Write-Host "[+] Служба уже остановлена." -ForegroundColor Green
             }
 
-            # 2. Ставим Start=4 через TrustedInstaller
+            # 2. Устанавливаем Start=4 через TrustedInstaller
             Write-Host "[*] Устанавливаем Start=4 (Disabled) через TrustedInstaller..." -ForegroundColor Yellow
 
             gsudo.exe -u "NT SERVICE\TrustedInstaller" powershell.exe -NoProfile -Command "Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName' -Name 'Start' -Type DWord -Value 4" 2>&1 |
@@ -277,7 +277,7 @@ runs:
             gsudo.exe -u "NT SERVICE\TrustedInstaller" powershell.exe -NoProfile -Command "Stop-Service -Name '$ServiceName' -Force -ErrorAction SilentlyContinue" 2>&1 |
                 ForEach-Object { Write-Host $_ }
 
-            Write-Host "[+] $ServiceName: остановлена и переведена в Start=4." -ForegroundColor Green
+            Write-Host "[+] ${ServiceName}: остановлена и переведена в Start=4." -ForegroundColor Green
         }
 
         Write-Host ""
