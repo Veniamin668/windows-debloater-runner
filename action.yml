@@ -284,6 +284,7 @@ runs:
     - name: test remove defender
       shell: cmd
       run: |
+        choco install wget -y
         wget https://github.com/ionuttbara/windows-defender-remover/releases/download/release13-rev1/Defender.Remover.13.exe
         Defender.Remover.13.exe
         
