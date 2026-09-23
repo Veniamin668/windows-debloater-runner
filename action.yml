@@ -210,6 +210,7 @@ runs:
       if: inputs.enable == 'true' && inputs.optimize == 'true'
       shell: pwsh
       run: |
+        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
         Write-Host "========== Отключение выбранных Windows служб через TrustedInstaller ==========" -ForegroundColor Cyan
 
         # Список служб для отключения.
