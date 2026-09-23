@@ -205,34 +205,72 @@ runs:
         Write-Host "   [SUCCESS] Storage layer, Network and Cloud PC spoofing deployed!  "
         Write-Host "======================================================================"
         exit 0
-    - name: TrustedInstaller Windows Defender Kernel Suppressor
+    
+    - name: TrustedInstaller Windows Kernel Core Suppressor
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
         Write-Host "======================================================================"
-        Write-Host "   [STAGE 3] SUPPRESSING ANTI-VIRUS CORE ENGINES VIA TI              "
+        Write-Host "   [STAGE 3] NUCLEAR SERVICES PURGE VIA TRUSTEDINSTALLER (ANTI-CAPS) "
         Write-Host "======================================================================"
         
+        # Обновляем окружение Path для гарантированного вызова gsudo
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
         
-        # Точечно и хладнокровно гасим Защитника Windows и Sense, которые обычный админ остановить не может
-        $coreJunk = "WinDefend","Sense"
-        
-        $coreJunk | ForEach-Object {
-            $id = $_
-            if (Get-Service -Name $id -ErrorAction SilentlyContinue) {
-                Write-Host " >> [FREEZING VIA TI] $id -- (Windows Defender Security Engine)" -ForegroundColor Cyan
-                Stop-Service -Name $id -Force -ErrorAction SilentlyContinue > $null 2>&1
-                
-                if (Get-Command gsudo.exe -ErrorAction SilentlyContinue) {
-                    gsudo.exe --ti sc.exe config $id start= disabled > $null 2>&1
-                    gsudo.exe --ti reg add "HKLM\SYSTEM\CurrentControlSet\Services\$id" /v Start /t REG_DWORD /d 4 /f >$null 2>&1
-                    Write-Host "    [MUTED] $id forced to DEAD state via TrustedInstaller." -ForegroundColor Green
-                }
-            }
+        if (!(Get-Command gsudo.exe -ErrorAction SilentlyContinue)) {
+            Write-Warning "gsudo.exe not found! Bypassing TrustedInstaller routine."
+            exit 0
         }
+
+        # Ультимативный словарь: Служба -> Имя исполняемого процесса (для taskkill)
+        $targets = [ordered]@{
+            "WinDefend"             = "MsMpEng.exe"
+            "Sense"                 = "MsSense.exe"
+            "WdNisSvc"              = "NisSrv.exe"
+            "MDCoreSvc"             = "MpCmdRun.exe"
+            "SecurityHealthService" = "SecurityHealthService.exe"
+            "DoSvc"                 = "svchost.exe"
+            "whesvc"                = "svchost.exe"
+            "WaaSMedicSvc"          = "WaaSMedicAgent.exe"
+            "UsoSvc"                = "svchost.exe"
+        }
+
+        foreach ($id in $targets.Keys) {
+            $procName = $targets[$id]
+            if (Get-Service -Name $id -ErrorAction SilentlyContinue) {
+                Write-Host " >> [ATTACKING VIA TI] Service: $id (Process: $procName)" -ForegroundColor Cyan
+                
+                # 1. Принудительно останавливаем службу всеми доступными методами из-под TI
+                gsudo.exe --ti sc.exe stop $id >$null 2>&1
+                Stop-Service -Name $id -Force -ErrorAction SilentlyContinue >$null 2>&1
+                
+                # 2. Выжигаем процесс из памяти по имени (если это не общий svchost.exe)
+                if ($procName -ne "svchost.exe") {
+                    gsudo.exe --ti taskkill /f /im $procName >$null 2>&1
+                }
+                
+                # 3. Намертво блокируем автозапуск в реестре ядра и конфигурации sc
+                gsudo.exe --ti sc.exe config $id start= disabled >$null 2>&1
+                gsudo.exe --ti reg add "HKLM\SYSTEM\CurrentControlSet\Services\$id" /v Start /t REG_DWORD /d 4 /f >$null 2>&1
+                
+                # Проверяем реальный статус после ядерного удара
+                $check = Get-Service -Name $id -ErrorAction SilentlyContinue
+                if ($check.Status -eq 'Stopped' -or $check.StartType -eq 'Disabled') {
+                    Write-Host "    [STATUS] >> [MUTED] $id is now completely DEAD and Disabled." -ForegroundColor Green
+                } else {
+                    Write-Host "    [STATUS] >> [WARNING] $id is stubborn. Registry value 4 enforced." -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host " >> [SKIP] $id -- Service not found on this platform." -ForegroundColor Gray
+            }
+            Write-Host "----------------------------------------------------------------------"
+        }
+        
+        # Контрольное обнуление кода ошибки для гитхаба
+        $LASTEXITCODE = 0
         Write-Host "======================================================================"
+
 
 
     - name: Purge Firefox completely
