@@ -223,6 +223,9 @@ runs:
             "DoSvc",
             "whesvc",
             "WaaSMedicSvc",
+            "webthreatdefsvc",
+            "WSAIFabricSvc",
+            "WindowsAzureGuestAgent",
             "UsoSvc"
         )
 
@@ -2676,8 +2679,13 @@ runs:
         Write-Host "Failed  : $failed"
         Write-Host "============================================================"
 
-
-
+    - name: Restart explorer.exe
+      shell: cmd
+      run: |
+        taskkill /f /im explorer.exe
+        taskkill /im explorer.exe
+        explorer.exe
+        exit 0
     # ============================================================
     # REMOVE LEFTOVER UNWANTED SERVICES
     # ============================================================
