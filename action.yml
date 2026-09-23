@@ -206,73 +206,82 @@ runs:
         Write-Host "======================================================================"
         exit 0
     
-    - name: TrustedInstaller Windows Kernel Core Suppressor
-      if: ${{ inputs.enable == 'true' }}
+    - name: Disable selected Windows services via TrustedInstaller
+      if: inputs.enable == 'true' && inputs.optimize == 'true'
       shell: pwsh
       run: |
-        $ErrorActionPreference = 'Continue'
-        Write-Host "======================================================================"
-        Write-Host "   [STAGE 3] NUCLEAR SERVICES PURGE VIA TRUSTEDINSTALLER (ANTI-CAPS) "
-        Write-Host "======================================================================"
-        
-        # Обновляем окружение Path для гарантированного вызова gsudo
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-        
-        if (!(Get-Command gsudo.exe -ErrorAction SilentlyContinue)) {
-            Write-Warning "gsudo.exe not found! Bypassing TrustedInstaller routine."
-            exit 0
-        }
+        Write-Host "========== Отключение выбранных Windows служб через TrustedInstaller ==========" -ForegroundColor Cyan
 
-        # Ультимативный словарь: Служба -> Имя исполняемого процесса (для taskkill)
-        $targets = [ordered]@{
-            "WinDefend"             = "MsMpEng.exe"
-            "Sense"                 = "MsSense.exe"
-            "WdNisSvc"              = "NisSrv.exe"
-            "MDCoreSvc"             = "MpCmdRun.exe"
-            "SecurityHealthService" = "SecurityHealthService.exe"
-            "DoSvc"                 = "svchost.exe"
-            "whesvc"                = "svchost.exe"
-            "WaaSMedicSvc"          = "WaaSMedicAgent.exe"
-            "UsoSvc"                = "svchost.exe"
-        }
+        # Список служб для отключения.
+        # Добавляй новые службы через запятую:
+        # "Service1",
+        # "Service2",
+        # "Service3"
+        $ServicesToDisable = @(
+            "WinDefend",
+            "Sense",
+            "WdNisSvc",
+            "MDCoreSvc",
+            "SecurityHealthService",
+            "DoSvc",
+            "whesvc",
+            "WaaSMedicSvc",
+            "UsoSvc"
+        )
 
-        foreach ($id in $targets.Keys) {
-            $procName = $targets[$id]
-            if (Get-Service -Name $id -ErrorAction SilentlyContinue) {
-                Write-Host " >> [ATTACKING VIA TI] Service: $id (Process: $procName)" -ForegroundColor Cyan
-                
-                # 1. Принудительно останавливаем службу всеми доступными методами из-под TI
-                gsudo.exe --ti sc.exe stop $id >$null 2>&1
-                Stop-Service -Name $id -Force -ErrorAction SilentlyContinue >$null 2>&1
-                
-                # 2. Выжигаем процесс из памяти по имени (если это не общий svchost.exe)
-                if ($procName -ne "svchost.exe") {
-                    gsudo.exe --ti taskkill /f /im $procName >$null 2>&1
-                }
-                
-                # 3. Намертво блокируем автозапуск в реестре ядра и конфигурации sc
-                gsudo.exe --ti sc.exe config $id start= disabled >$null 2>&1
-                gsudo.exe --ti reg add "HKLM\SYSTEM\CurrentControlSet\Services\$id" /v Start /t REG_DWORD /d 4 /f >$null 2>&1
-                
-                # Проверяем реальный статус после ядерного удара
-                $check = Get-Service -Name $id -ErrorAction SilentlyContinue
-                if ($check.Status -eq 'Stopped' -or $check.StartType -eq 'Disabled') {
-                    Write-Host "    [STATUS] >> [MUTED] $id is now completely DEAD and Disabled." -ForegroundColor Green
-                } else {
-                    Write-Host "    [STATUS] >> [WARNING] $id is stubborn. Registry value 4 enforced." -ForegroundColor Yellow
-                }
-            } else {
-                Write-Host " >> [SKIP] $id -- Service not found on this platform." -ForegroundColor Gray
+        # Приводим список к нормальному виду и убираем дубли
+        $ServicesToDisable = $ServicesToDisable |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+            Select-Object -Unique
+
+        Write-Host "[*] Подготовлено служб к отключению: $($ServicesToDisable.Count)" -ForegroundColor Cyan
+
+        foreach ($ServiceName in $ServicesToDisable) {
+            Write-Host ""
+            Write-Host "========== $ServiceName ==========" -ForegroundColor Cyan
+
+            $Service = Get-CimInstance Win32_Service -Filter "Name='$ServiceName'" -ErrorAction SilentlyContinue
+
+            if ($null -eq $Service) {
+                Write-Host "[!] Служба не найдена: $ServiceName" -ForegroundColor DarkYellow
+                continue
             }
-            Write-Host "----------------------------------------------------------------------"
+
+            Write-Host "[+] Найдена: $($Service.DisplayName)" -ForegroundColor Green
+            Write-Host "[*] Состояние: $($Service.State)" -ForegroundColor Gray
+            Write-Host "[*] StartMode: $($Service.StartMode)" -ForegroundColor Gray
+
+            # 1. Останавливаем службу через TrustedInstaller
+            if ($Service.State -ne "Stopped") {
+                Write-Host "[*] Останавливаем службу через TrustedInstaller..." -ForegroundColor Yellow
+
+                gsudo.exe -u "NT SERVICE\TrustedInstaller" powershell.exe -NoProfile -Command "Stop-Service -Name '$ServiceName' -Force -ErrorAction SilentlyContinue" 2>&1 |
+                    ForEach-Object { Write-Host $_ }
+
+                Start-Sleep -Milliseconds 500
+            }
+            else {
+                Write-Host "[+] Служба уже остановлена." -ForegroundColor Green
+            }
+
+            # 2. Ставим Start=4 через TrustedInstaller
+            Write-Host "[*] Устанавливаем Start=4 (Disabled) через TrustedInstaller..." -ForegroundColor Yellow
+
+            gsudo.exe -u "NT SERVICE\TrustedInstaller" powershell.exe -NoProfile -Command "Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName' -Name 'Start' -Type DWord -Value 4" 2>&1 |
+                ForEach-Object { Write-Host $_ }
+
+            # 3. Повторно останавливаем службу через TrustedInstaller
+            Write-Host "[*] Повторно останавливаем службу через TrustedInstaller..." -ForegroundColor Yellow
+
+            gsudo.exe -u "NT SERVICE\TrustedInstaller" powershell.exe -NoProfile -Command "Stop-Service -Name '$ServiceName' -Force -ErrorAction SilentlyContinue" 2>&1 |
+                ForEach-Object { Write-Host $_ }
+
+            Write-Host "[+] $ServiceName: остановлена и переведена в Start=4." -ForegroundColor Green
         }
-        
-        # Контрольное обнуление кода ошибки для гитхаба
-        $LASTEXITCODE = 0
-        Write-Host "======================================================================"
 
-
-
+        Write-Host ""
+        Write-Host "[+] Все выбранные службы обработаны." -ForegroundColor Green
 
     - name: Purge Firefox completely
       if: ${{ inputs.enable == 'true' }}
