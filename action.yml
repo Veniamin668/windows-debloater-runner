@@ -257,7 +257,7 @@ runs:
             if ($Service.State -ne "Stopped") {
                 Write-Host "[*] Останавливаем службу через TrustedInstaller..." -ForegroundColor Yellow
 
-                gsudo.exe -u "NT AUTHORITY\SYSTEM" powershell.exe -NoProfile -Command "Stop-Service -Name '$ServiceName' -Force -ErrorAction SilentlyContinue" 2>&1 |
+                gsudo.exe --ti powershell.exe -NoProfile -Command "Stop-Service -Name '$ServiceName' -Force -ErrorAction SilentlyContinue" 2>&1 |
                     ForEach-Object { Write-Host $_ }
 
                 Start-Sleep -Milliseconds 500
@@ -269,13 +269,13 @@ runs:
             # 2. Устанавливаем Start=4 через TrustedInstaller
             Write-Host "[*] Устанавливаем Start=4 (Disabled) через TrustedInstaller..." -ForegroundColor Yellow
 
-            gsudo.exe -u "NT AUTHORITY\SYSTEM" powershell.exe -NoProfile -Command "Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName' -Name 'Start' -Type DWord -Value 4" 2>&1 |
+            gsudo.exe --ti powershell.exe -NoProfile -Command "Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\$ServiceName' -Name 'Start' -Type DWord -Value 4" 2>&1 |
                 ForEach-Object { Write-Host $_ }
 
             # 3. Повторно останавливаем службу через TrustedInstaller
             Write-Host "[*] Повторно останавливаем службу через TrustedInstaller..." -ForegroundColor Yellow
 
-            gsudo.exe -u "NT AUTHORITY\SYSTEM" powershell.exe -NoProfile -Command "Stop-Service -Name '$ServiceName' -Force -ErrorAction SilentlyContinue" 2>&1 |
+            gsudo.exe --ti powershell.exe -NoProfile -Command "Stop-Service -Name '$ServiceName' -Force -ErrorAction SilentlyContinue" 2>&1 |
                 ForEach-Object { Write-Host $_ }
 
             Write-Host "[+] ${ServiceName}: остановлена и переведена в Start=4." -ForegroundColor Green
