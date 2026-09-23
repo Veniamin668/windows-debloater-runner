@@ -224,7 +224,6 @@ runs:
             "DoSvc",
             "whesvc",
             "WaaSMedicSvc",
-            "WinDefend",
             "UsoSvc"
         )
 
