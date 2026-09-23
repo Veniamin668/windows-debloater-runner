@@ -65,40 +65,6 @@ inputs:
 runs:
   using: composite
   steps:
-
-    - name: Pre-Emptive Defender Nuclear Neutralization
-      if: ${{ inputs.enable == 'true' }}
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Continue'
-        Write-Host "======================================================================"
-        Write-Host "   [PRE-EMPTIVE] INJECTING POLICIES TO BYPASS TAMPER CORE             "
-        Write-Host "======================================================================"
-
-        # 1. Глушим мониторинг и исключения на уровне встроенных преференций (Тампер это хавает!)
-        Set-MpPreference -DisableRealtimeMonitoring $true -ErrorAction SilentlyContinue
-        Set-MpPreference -DisableBehaviorMonitoring $true -ErrorAction SilentlyContinue
-        Set-MpPreference -DisableIOAVProtection $true -ErrorAction SilentlyContinue
-        Set-MpPreference -DisableBlockAtFirstSeen $true -ErrorAction SilentlyContinue
-        
-        # Вносим весь диск C: в список исключений! Если он не может отключиться, пускай просто ничего не сканирует!
-        Add-MpPreference -ExclusionPath "C:\" -ErrorAction SilentlyContinue
-        Add-MpPreference -ExclusionPath "D:\" -ErrorAction SilentlyContinue
-        Write-Host " >> [POLICY] All active volumes added to Defender exclusions matrix!" -ForegroundColor Green
-
-        # 2. Жёстко забиваем политики отключения через обычный реестр (GPO Override)
-        $gpoPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender"
-        if (!(Test-Path $gpoPath)) { New-Item -Path $gpoPath -Force >$null 2>&1 }
-        Set-ItemProperty -Path $gpoPath -Name "DisableAntiSpyware" -Value 1 -Force -ErrorAction SilentlyContinue
-        Set-ItemProperty -Path $gpoPath -Name "DisableAntiVirus" -Value 1 -Force -ErrorAction SilentlyContinue
-        
-        $realtimePath = "$gpoPath\Real-Time Protection"
-        if (!(Test-Path $realtimePath)) { New-Item -Path $realtimePath -Force >$null 2>&1 }
-        Set-ItemProperty -Path $realtimePath -Name "DisableRealtimeMonitoring" -Value 1 -Force -ErrorAction SilentlyContinue
-
-        Write-Host "======================================================================"
-        $LASTEXITCODE = 0
-
     - name: Hardcore OOBE Suppressor
       if: ${{ inputs.oobe-disable == 'true' }}
       shell: pwsh
@@ -252,9 +218,6 @@ runs:
         # "Service2",
         # "Service3"
         $ServicesToDisable = @(
-            "WinDefend",
-            "WdNisSvc",
-            "MDCoreSvc",
             "Sense",
             "SecurityHealthService",
             "DoSvc",
