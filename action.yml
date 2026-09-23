@@ -219,12 +219,12 @@ runs:
         # "Service2",
         # "Service3"
         $ServicesToDisable = @(
-            "WinDefend",
             "Sense",
             "SecurityHealthService",
             "DoSvc",
             "whesvc",
             "WaaSMedicSvc",
+            "WinDefend",
             "UsoSvc"
         )
 
