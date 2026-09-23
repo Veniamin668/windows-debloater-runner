@@ -242,7 +242,7 @@ runs:
                 Write-Host " >> [ATTACKING VIA TI] Service: $id (Process: $procName)" -ForegroundColor Cyan
                 
                 # 1. Принудительно останавливаем службу всеми доступными методами из-под TI
-                gsudo.exe --ti sc.exe stop $id >$null 2>&1
+                gsudo.exe --ti --no-header sc.exe stop $id >$null 2>&1
                 Stop-Service -Name $id -Force -ErrorAction SilentlyContinue >$null 2>&1
                 
                 # 2. Выжигаем процесс из памяти по имени (если это не общий svchost.exe)
