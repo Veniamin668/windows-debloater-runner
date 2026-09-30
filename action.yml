@@ -232,6 +232,13 @@ runs:
             "RdAgent",
             "mpssvc",
             "wuauserv",
+            "wlidsvc",
+            "cloudidsvc",
+            "wuqisvc",
+            "WpcMonSvc",
+            "RetailDemo",
+            "wscsvc",
+            "TapiSrv",
             "UsoSvc"
         )
 
