@@ -1398,64 +1398,6 @@ runs:
           Write-Host "[NOT FOUND] $path"
         }
 
-    - name: Remove C:\Miniconda
-      if: ${{ inputs.azure-del == 'true' }}
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Continue'
-
-        $path = "$env:SYSTEMDRIVE\Miniconda"
-
-        if (Test-Path -LiteralPath $path) {
-          Write-Host "[REMOVE] $path"
-
-          try {
-            Remove-Item `
-              -LiteralPath $path `
-              -Recurse `
-              -Force `
-              -ErrorAction Stop
-
-            Write-Host "[REMOVED] $path"
-          }
-          catch {
-            Write-Warning "Failed to completely remove $path"
-            Write-Warning $_
-          }
-        }
-        else {
-          Write-Host "[NOT FOUND] $path"
-        }
-
-    - name: Remove Amazon folders in programfiles
-      if: ${{ inputs.azure-del == 'true' }}
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Continue'
-
-        $path = "$env:SYSTEMDRIVE\Program Files\Amazon"
-
-        if (Test-Path -LiteralPath $path) {
-          Write-Host "[REMOVE] $path"
-
-          try {
-            Remove-Item `
-              -LiteralPath $path `
-              -Recurse `
-              -Force `
-              -ErrorAction Stop
-
-            Write-Host "[REMOVED] $path"
-          }
-          catch {
-            Write-Warning "Failed to completely remove $path"
-            Write-Warning $_
-          }
-        }
-        else {
-          Write-Host "[NOT FOUND] $path"
-        }
-
     - name: Remove Application Verifier folders in progfiles
       if: ${{ inputs.azure-del == 'true' }}
       shell: pwsh
@@ -1486,7 +1428,6 @@ runs:
         }
 
     - name: Remove Microsoft SDKs folders in x64 progfiles
-      if: ${{ inputs.azure-del == 'true' }}
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
@@ -1605,42 +1546,6 @@ runs:
           Write-Host "[NOT FOUND] $path"
         }
 
-    # ============================================================
-    # REMOVE Microsoft Edge
-    # ============================================================
-
-    - name: Remove Edge
-      if: ${{ inputs.enable == 'true' }}
-      shell: pwsh
-      run: |
-        taskkill /f /im msedgewebview2.exe
-        taskkill /f /im SearchHost.exe
-        taskkill /f /im msedge.exe
-        $ErrorActionPreference = 'Continue'
-
-        $path = "$env:SYSTEMDRIVE\Program Files (x86)\Microsoft"
-
-        if (Test-Path -LiteralPath $path) {
-          Write-Host "[REMOVE] $path"
-
-          try {
-            Remove-Item `
-              -LiteralPath $path `
-              -Recurse `
-              -Force `
-              -ErrorAction Stop
-
-            Write-Host "[REMOVED] $path"
-          }
-          catch {
-            Write-Warning "Failed to completely remove $path"
-            Write-Warning $_
-          }
-        }
-        else {
-          Write-Host "[NOT FOUND] $path"
-        }
-        exit 0
 
     # ============================================================
     # REMOVE C:\npm
@@ -1840,38 +1745,6 @@ runs:
           Write-Host "[NOT FOUND] $path"
         }
 
-    # ============================================================
-    # REMOVE Package Cache
-    # ============================================================
-
-    - name: Remove Package Cache
-      if: ${{ inputs.enable == 'true' }}
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Continue'
-
-        $path = "$env:SYSTEMDRIVE\ProgramData\Package Cache"
-
-        if (Test-Path -LiteralPath $path) {
-          Write-Host "[REMOVE] $path"
-
-          try {
-            Remove-Item `
-              -LiteralPath $path `
-              -Recurse `
-              -Force `
-              -ErrorAction Stop
-
-            Write-Host "[REMOVED] $path"
-          }
-          catch {
-            Write-Warning "Failed to completely remove $path"
-            Write-Warning $_
-          }
-        }
-        else {
-          Write-Host "[NOT FOUND] $path"
-        }
 
     # ============================================================
     # REMOVE pipelinesagent
@@ -2037,42 +1910,6 @@ runs:
         else {
           Write-Host "[NOT FOUND] $path"
         }
-
-    # ============================================================
-    # REMOVE OneDrive in Appdata\Local
-    # ============================================================
-
-    - name: Remove OneDrive folder in userprofile
-      if: ${{ inputs.enable == 'true' }}
-      shell: pwsh
-      run: |
-        taskkill /f /im OneDrive.Sync.Service.exe
-        taskkill /f /im OneDrive.exe
-        $ErrorActionPreference = 'Continue'
-
-        $path = "$env:USERPROFILE\AppData\Local\Microsoft\OneDrive"
-
-        if (Test-Path -LiteralPath $path) {
-          Write-Host "[REMOVE] $path"
-
-          try {
-            Remove-Item `
-              -LiteralPath $path `
-              -Recurse `
-              -Force `
-              -ErrorAction Stop
-
-            Write-Host "[REMOVED] $path"
-          }
-          catch {
-            Write-Warning "Failed to completely remove $path"
-            Write-Warning $_
-          }
-        }
-        else {
-          Write-Host "[NOT FOUND] $path"
-        }
-        exit 0
         
     # ============================================================
     # REMOVE Temp
@@ -2257,71 +2094,6 @@ runs:
           Write-Host "[NOT FOUND] $path"
         }
 
-    - name: Remove Python folders from Start Menu
-      if: ${{ inputs.enable == 'true' }}
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Continue'
-        $basePath = "$env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
-
-        if (Test-Path -LiteralPath $basePath) {
-          Write-Host "[SCANNING START MENU] Looking for Python directories in $basePath"
-          
-          # Находим все папки со словом Python на любых уровнях и жёстко сносим через конвейер
-          Get-ChildItem -Path $basePath -Recurse -Directory -Filter "*Python*" -ErrorAction SilentlyContinue | ForEach-Object {
-              $path = $_.FullName
-              Write-Host "[REMOVE] $path"
-              Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "[REMOVED] $path"
-          }
-        }
-        else {
-          Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
-        }
-
-    - name: Remove Edge shortcuts from Start Menu
-      if: ${{ inputs.enable == 'true' }}
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Continue'
-        $basePath = "$env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
-
-        if (Test-Path -LiteralPath $basePath) {
-          Write-Host "[SCANNING START MENU] Looking for Edge shortcuts in $basePath"
-          
-          # Находим именно файлы ярлыков Microsoft Edge и стираем их напрямую
-          Get-ChildItem -Path $basePath -Recurse -File -Filter "*Edge*" -ErrorAction SilentlyContinue | ForEach-Object {
-              $path = $_.FullName
-              Write-Host "[REMOVE] $path"
-              Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
-              Write-Host "[REMOVED] $path"
-          }
-        }
-        else {
-          Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
-        }
-
-    - name: Remove OneDrive shortcut from Start Menu
-      if: ${{ inputs.enable == 'true' }}
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Continue'
-        $basePath = "$env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
-
-        if (Test-Path -LiteralPath $basePath) {
-          Write-Host "[SCANNING START MENU] Looking for OneDrive shortcuts in $basePath"
-          
-          # Находим именно файлы ярлыков OneDrive и стираем их напрямую
-          Get-ChildItem -Path $basePath -Recurse -File -Filter "*OneDrive*" -ErrorAction SilentlyContinue | ForEach-Object {
-              $path = $_.FullName
-              Write-Host "[REMOVE] $path"
-              Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
-              Write-Host "[REMOVED] $path"
-          }
-        }
-        else {
-          Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
-        }
         
     - name: Remove Chocolatey packages
       if: ${{ inputs.choco-del == 'true' }}
@@ -2971,6 +2743,223 @@ runs:
         Write-Host "Failed  : $failed"
         Write-Host "============================================================"
 
+    - name: Remove Edge
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        taskkill /f /im msedgewebview2.exe
+        taskkill /f /im SearchHost.exe
+        taskkill /f /im msedge.exe
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Program Files (x86)\Microsoft"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+        exit 0
+        
+    - name: Remove Package Cache
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\ProgramData\Package Cache"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+        
+    - name: Remove OneDrive folder in userprofile
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        taskkill /f /im OneDrive.Sync.Service.exe
+        taskkill /f /im OneDrive.exe
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:USERPROFILE\AppData\Local\Microsoft\OneDrive"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+        exit 0
+        
+    - name: Remove C:\Miniconda
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Miniconda"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    - name: Remove Amazon folders in programfiles
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Program Files\Amazon"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    - name: Remove Edge shortcuts from Start Menu
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        $basePath = "$env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
+
+        if (Test-Path -LiteralPath $basePath) {
+          Write-Host "[SCANNING START MENU] Looking for Edge shortcuts in $basePath"
+          
+          # Находим именно файлы ярлыков Microsoft Edge и стираем их напрямую
+          Get-ChildItem -Path $basePath -Recurse -File -Filter "*Edge*" -ErrorAction SilentlyContinue | ForEach-Object {
+              $path = $_.FullName
+              Write-Host "[REMOVE] $path"
+              Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+              Write-Host "[REMOVED] $path"
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
+        }
+
+    - name: Remove Python folders from Start Menu
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        $basePath = "$env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
+
+        if (Test-Path -LiteralPath $basePath) {
+          Write-Host "[SCANNING START MENU] Looking for Python directories in $basePath"
+          
+          # Находим все папки со словом Python на любых уровнях и жёстко сносим через конвейер
+          Get-ChildItem -Path $basePath -Recurse -Directory -Filter "*Python*" -ErrorAction SilentlyContinue | ForEach-Object {
+              $path = $_.FullName
+              Write-Host "[REMOVE] $path"
+              Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "[REMOVED] $path"
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
+        }
+
+
+    - name: Remove OneDrive shortcut from Start Menu
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        $basePath = "$env:SYSTEMDRIVE\ProgramData\Microsoft\Windows\Start Menu\Programs"
+
+        if (Test-Path -LiteralPath $basePath) {
+          Write-Host "[SCANNING START MENU] Looking for OneDrive shortcuts in $basePath"
+          
+          # Находим именно файлы ярлыков OneDrive и стираем их напрямую
+          Get-ChildItem -Path $basePath -Recurse -File -Filter "*OneDrive*" -ErrorAction SilentlyContinue | ForEach-Object {
+              $path = $_.FullName
+              Write-Host "[REMOVE] $path"
+              Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+              Write-Host "[REMOVED] $path"
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
+        }
+        
     - name: Restart explorer.exe
       shell: cmd
       run: |
