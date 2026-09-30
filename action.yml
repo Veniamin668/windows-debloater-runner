@@ -2907,13 +2907,31 @@ runs:
 
             if ($uninstall -match '(?i)\.exe') {
 
-              Write-Warning `
-                "[SKIP] Unknown EXE uninstaller: $name"
+              Write-Host ""
+              Write-Host "[UNKNOWN EXE] $name" -ForegroundColor Cyan
+              Write-Host "Command: $uninstall" -ForegroundColor Gray
 
-              Write-Warning `
-                "Command: $uninstall"
+              $process = Start-Process `
+                -FilePath 'cmd.exe' `
+                -ArgumentList "/c $uninstall" `
+                -Wait `
+                -PassThru `
+                -NoNewWindow
 
-              $skipped++
+              if (
+                $process.ExitCode -eq 0 -or
+                $process.ExitCode -eq 3010
+              ) {
+                Write-Host "[REMOVED] $name" -ForegroundColor Green
+                $removed++
+              }
+              else {
+                Write-Warning `
+                  "[FAILED] $name - EXE exit code $($process.ExitCode)"
+
+                $failed++
+              }
+
               continue
             }
 
