@@ -61,6 +61,11 @@ inputs:
     description: 'Remove C:\npm folder?'
     required: false
     default: 'true'
+      
+  visual_del:
+    description: 'Remove Visual Studio?'
+    required: false
+    default: 'true'
 
 runs:
   using: composite
@@ -2743,6 +2748,72 @@ runs:
         Write-Host "Failed  : $failed"
         Write-Host "============================================================"
 
+    - name: remove visual studio
+      if: ${{inputs.visual_del == 'true' }}
+      shell: pwsh
+      run: |
+         $env:SYSTEMDRIVE\Program Files (x86)\Microsoft Visual Studio\Installer\InstallCleanup.exe
+
+    - name: Remove VISUAL STUDIO FOLDER 
+      if: ${{ inputs.visual_del == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Program Files (x86)\Microsoft Visual Studio"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+        exit 0
+
+    - name: Remove VISUAL STUDIO FOLDER x64
+      if: ${{ inputs.visual_del == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Program Files\Microsoft Visual Studio"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+        exit 0
+        
     - name: Remove Edge
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
