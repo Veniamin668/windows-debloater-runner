@@ -226,6 +226,12 @@ runs:
             "webthreatdefsvc",
             "WSAIFabricSvc",
             "WindowsAzureGuestAgent",
+            "NgcCtnrSvc",
+            "SEMgrSvc",
+            "Spooler",
+            "RdAgent",
+            "mpssvc",
+            "wuauserv",
             "UsoSvc"
         )
 
@@ -1298,6 +1304,267 @@ runs:
           Write-Host "[NOT FOUND] $path"
         }
 
+    - name: Remove Azure folders
+      if: ${{ inputs.azure-del == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\WindowsAzure"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    - name: Remove C:\shells (not remove shells (e.g:cmd,pwsh,powershell))
+      if: ${{ inputs.azure-del == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\shells"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    - name: Remove PSModuleAnalysisCachePath
+      if: ${{ inputs.azure-del == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\PSModuleAnalysisCachePath"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    - name: Remove C:\Miniconda
+      if: ${{ inputs.azure-del == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Miniconda"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    - name: Remove Amazon folders in programfiles
+      if: ${{ inputs.azure-del == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Program Files\Amazon"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    - name: Remove Application Verifier folders in progfiles
+      if: ${{ inputs.azure-del == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Program Files\Application Verifier"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    - name: Remove Microsoft SDKs folders in x64 progfiles
+      if: ${{ inputs.azure-del == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Program Files\Microsoft SDKs"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    - name: Remove AppVerifier in x86 progfiles
+      if: ${{ inputs.azure-del == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Program Files (x86)\Application Verifier"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+
+    - name: Remove Microsoft SDKs in x86 progfiles
+      if: ${{ inputs.azure-del == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Program Files (x86)\Microsoft SDKs"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+        
     # ============================================================
     # REMOVE Windows Kits
     # ============================================================
