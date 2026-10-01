@@ -1346,7 +1346,7 @@ runs:
         }
 
     - name: Remove C:\shells (not remove shells (e.g:cmd,pwsh,powershell))
-      if: ${{ inputs.azure-del == 'true' }}
+      if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
@@ -1375,7 +1375,7 @@ runs:
         }
 
     - name: Remove PSModuleAnalysisCachePath
-      if: ${{ inputs.azure-del == 'true' }}
+      if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
@@ -1404,7 +1404,7 @@ runs:
         }
 
     - name: Remove Application Verifier folders in progfiles
-      if: ${{ inputs.azure-del == 'true' }}
+      if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
@@ -1461,7 +1461,7 @@ runs:
         }
 
     - name: Remove AppVerifier in x86 progfiles
-      if: ${{ inputs.azure-del == 'true' }}
+      if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
@@ -1490,7 +1490,7 @@ runs:
         }
 
     - name: Remove Microsoft SDKs in x86 progfiles
-      if: ${{ inputs.azure-del == 'true' }}
+      if: ${{ inputs.enable == 'true' }}
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
@@ -1916,24 +1916,6 @@ runs:
           Write-Host "[NOT FOUND] $path"
         }
         
-    # ============================================================
-    # REMOVE Temp
-    # ============================================================
-
-    - name: Remove Temp contents
-      if: ${{ inputs.enable == 'true' }}
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Continue'
-        
-        Write-Host "[REMOVE] Cleaning User Temp..."
-        Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-
-        Write-Host "[REMOVE] Cleaning System Temp..."
-        Remove-Item -Path "$env:SYSTEMDRIVE\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
-        
-        Write-Host "[SUCCESS] Temp directories purged!"
-
     # ============================================================
     # REMOVE runner folder in Program Data
     # ============================================================
@@ -2752,7 +2734,7 @@ runs:
       if: ${{inputs.visual_del == 'true' }}
       shell: pwsh
       run: |
-         $env:SYSTEMDRIVE\Program Files (x86)\Microsoft Visual Studio\Installer\InstallCleanup.exe
+         "$env:SYSTEMDRIVE\Program Files (x86)\Microsoft Visual Studio\Installer\InstallCleanup.exe"
 
     - name: Remove VISUAL STUDIO FOLDER 
       if: ${{ inputs.visual_del == 'true' }}
@@ -3030,6 +3012,24 @@ runs:
         else {
           Write-Host "[NOT FOUND] Start Menu Base Path: $basePath"
         }
+
+    # ============================================================
+    # REMOVE Temp
+    # ============================================================
+
+    - name: Remove Temp contents
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        
+        Write-Host "[REMOVE] Cleaning User Temp..."
+        Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+
+        Write-Host "[REMOVE] Cleaning System Temp..."
+        Remove-Item -Path "$env:SYSTEMDRIVE\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+        
+        Write-Host "[SUCCESS] Temp directories purged!"
         
     - name: Restart explorer.exe
       shell: cmd
