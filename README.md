@@ -8,7 +8,7 @@ This GitHub Action removes unnecessary preinstalled software from Windows runner
 
 The following software is preserved:
 
-- Visual Studio and its components
+- Visual Studio and its components (or visual_del 'false')
 - Git for Windows
 - Git Credential Manager
 - GitHub CLI
@@ -88,7 +88,7 @@ Usage
 Add the action to your workflow:
 ``` code
       - name: Debloat windows
-        uses: Veniamin668/windows-debloater-runner@v6
+        uses: Veniamin668/windows-debloater-runner@v7
         with:
           enable: 'true'
           azure-del: 'true'
@@ -99,6 +99,7 @@ Add the action to your workflow:
           oobe-disable: 'true'
           wsl-rename: 'true'
           npm-del: 'true'
+          visual_del: 'true'
 ```
 Set enable to 'false' to disable the cleanup
 azure-del false to disable delete Azure modules folder 
@@ -112,6 +113,8 @@ del-installer-user removes the "installer" user and their folder, which takes up
 oobe-disable Renames the WWAHost.exe file by appending "123" to their names to bypass the OOBE privacy settings screen.
 
 npm-del remove %SYSTEMDRIVE%\npm folder
+
+visual_del remove Visual Studio and all folders for vs
 
 wsl-rename rename the wsl.exe file by appending "123" to the extension, thereby preventing the WSL update prompt on ARM-based runners
 
@@ -127,12 +130,9 @@ Stops unwanted services and processes.
 Removes selected large directories.
 Prints a cleanup summary.
 
-Supported uninstallers include MSI, Inno Setup and NSIS.
+Supported uninstallers include MSI, Inno Setup and NSIS. Overall, starting with the v7 branch, the tool for removing unnecessary components has gained the ability to remove all unknown executable files—such as those that are not MSI installers.
 
 Applications with unsupported uninstallers are skipped instead of being forcefully deleted.
-
-Version v6 is a major update compared to previous versions, incorporating numerous Windows cleanup operations. I plan to subsequently expand this set of actions to include Windows and NTFS file system optimization features.
-
 
 Warning
 
