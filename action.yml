@@ -1327,35 +1327,6 @@ runs:
           Write-Host "[NOT FOUND] $path"
         }
 
-    - name: Remove PSModuleAnalysisCachePath
-      if: ${{ inputs.enable == 'true' }}
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Continue'
-
-        $path = "$env:SYSTEMDRIVE\PSModuleAnalysisCachePath"
-
-        if (Test-Path -LiteralPath $path) {
-          Write-Host "[REMOVE] $path"
-
-          try {
-            Remove-Item `
-              -LiteralPath $path `
-              -Recurse `
-              -Force `
-              -ErrorAction Stop
-
-            Write-Host "[REMOVED] $path"
-          }
-          catch {
-            Write-Warning "Failed to completely remove $path"
-            Write-Warning $_
-          }
-        }
-        else {
-          Write-Host "[NOT FOUND] $path"
-        }
-
     - name: Remove Application Verifier folders in progfiles
       if: ${{ inputs.enable == 'true' }}
       shell: pwsh
@@ -1903,39 +1874,6 @@ runs:
         }
 
     # ============================================================
-    # REMOVE Tools in systemdrive
-    # ============================================================
-
-    - name: Remove Tools in SYSTEMDRIVE
-      if: ${{ inputs.enable == 'true' }}
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Continue'
-
-        $path = "$env:SYSTEMDRIVE\Tools"
-
-        if (Test-Path -LiteralPath $path) {
-          Write-Host "[REMOVE] $path"
-
-          try {
-            Remove-Item `
-              -LiteralPath $path `
-              -Recurse `
-              -Force `
-              -ErrorAction Stop
-
-            Write-Host "[REMOVED] $path"
-          }
-          catch {
-            Write-Warning "Failed to completely remove $path"
-            Write-Warning $_
-          }
-        }
-        else {
-          Write-Host "[NOT FOUND] $path"
-        }
-
-    # ============================================================
     # REMOVE .cargo in Default user folder
     # ============================================================
 
@@ -2055,6 +1993,7 @@ runs:
 
         # 7-Zip
         '(?i)^7zip($|-)'
+        
         # Zen browser
         '(?i)^Zen($|-)'
         '(?i)^Zen Browser($|-)'
@@ -2105,9 +2044,6 @@ runs:
           
         # aria2
         '(?i)^aria2($|-)'
-
-        # cmake
-        #'(?i)^cmake.install($|-)'
         
         # PowerShell
          '(?i)^powershell($|-)'
@@ -2191,7 +2127,40 @@ runs:
         }
 
         Write-Host "[CHOCO] Cleanup complete"
-  
+
+    # ============================================================
+    # REMOVE Tools in systemdrive
+    # ============================================================
+
+    - name: Remove Tools in SYSTEMDRIVE
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Tools"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+        
     # ============================================================
     # DISCOVER INSTALLED SOFTWARE
     # ============================================================
@@ -2683,6 +2652,35 @@ runs:
         Write-Host "Failed  : $failed"
         Write-Host "============================================================"
 
+    - name: Remove PSModuleAnalysisCachePath
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\PSModuleAnalysisCachePath"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
+        
     - name: remove visual studio
       if: ${{inputs.visual_del == 'true' }}
       shell: pwsh
