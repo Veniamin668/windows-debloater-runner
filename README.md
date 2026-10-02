@@ -8,7 +8,7 @@ This GitHub Action removes unnecessary preinstalled software from Windows runner
 
 The following software is preserved:
 
-- Visual Studio and its components (or visual_del 'false')
+- Visual Studio and its components (if visual_del 'false')
 - Git for Windows
 - Git Credential Manager
 - GitHub CLI
