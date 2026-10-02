@@ -81,7 +81,18 @@ C:\npm
 %SYSTEMDRIVE%\Users\Default\.cargo
 %SYSTEMDRIVE%\Users\Default\.rustup
 %SYSTEMDRIVE%\Users\Default\.dotnet
-
+C:\shells
+C:\PSModuleAnalysisCachePath
+SYSTEMDRIVE\Program Files\Application Verifier
+SYSTEMDRIVE\Program Files\Microsoft SDKs
+SYSTEMDRIVE\Program Files (x86)\Application Verifier
+SYSTEMDRIVE\Program Files (x86)\Microsoft SDKs
+USERPROFILE\AppData\Local\AzureFunctionsTools
+USERPROFILE\AppData\Local\.IdentityService
+SYSTEMDRIVE\ProgramData\kind
+SYSTEMDRIVE\Program Files (x86)\pipx_bin
+SYSTEMDRIVE\Program Files (x86)\pipx
+SYSTEMDRIVE\Program Files\Amazon
 ```
 Usage
 
