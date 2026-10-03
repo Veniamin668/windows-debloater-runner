@@ -1994,9 +1994,9 @@ runs:
         '(?i)^Zen Browser($|-)'
 
         # Visual Studio
-        #'(?i)^visualstudio($|[-.])'
-        #'(?i)^visual-studio($|[-.])'
-        #'(?i)^vswhere($|-)'
+        '(?i)^visualstudio($|[-.])'
+        '(?i)^visual-studio($|[-.])'
+        '(?i)^vswhere($|-)'
 
         # Git
         '(?i)^git($|-)'
@@ -2259,14 +2259,14 @@ runs:
           # VISUAL STUDIO
           # ------------------------------------------------------
 
-          #'(?i)\bMicrosoft Visual Studio\b',
-          #'(?i)^Visual Studio\b',
-          #'(?i)^Visual Studio Build Tools\b',
-          #'(?i)^Visual Studio Installer\b',
-          #'(?i)^VS Installer\b',
-          #'(?i)^vs_',
-          #'(?i)^sptools_Microsoft\.VisualStudio',
-          #'(?i)^Microsoft Visual Studio Setup',
+          '(?i)\bMicrosoft Visual Studio\b',
+          '(?i)^Visual Studio\b',
+          '(?i)^Visual Studio Build Tools\b',
+          '(?i)^Visual Studio Installer\b',
+          '(?i)^VS Installer\b',
+          '(?i)^vs_',
+          '(?i)^sptools_Microsoft\.VisualStudio',
+          '(?i)^Microsoft Visual Studio Setup',
 
           # ------------------------------------------------------
           # GIT
