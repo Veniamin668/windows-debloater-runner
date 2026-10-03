@@ -8,7 +8,6 @@ This GitHub Action removes unnecessary preinstalled software from Windows runner
 
 The following software is preserved:
 
-- Visual Studio and its components (if visual_del 'false')
 - Git for Windows
 - Git Credential Manager
 - GitHub CLI
@@ -110,7 +109,6 @@ Add the action to your workflow:
           oobe-disable: 'true'
           wsl-rename: 'true'
           npm-del: 'true'
-          visual_del: 'true'
 ```
 Set enable to 'false' to disable the cleanup
 azure-del false to disable delete Azure modules folder 
@@ -124,8 +122,6 @@ del-installer-user removes the "installer" user and their folder, which takes up
 oobe-disable Renames the WWAHost.exe file by appending "123" to their names to bypass the OOBE privacy settings screen.
 
 npm-del remove %SYSTEMDRIVE%\npm folder
-
-visual_del remove Visual Studio and all folders for vs
 
 wsl-rename rename the wsl.exe file by appending "123" to the extension, thereby preventing the WSL update prompt on ARM-based runners
 
