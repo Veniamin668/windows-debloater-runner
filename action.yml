@@ -2565,9 +2565,56 @@ runs:
               Write-Host "[UNKNOWN EXE] $name" -ForegroundColor Cyan
               Write-Host "Command: $uninstall" -ForegroundColor Gray
 
+              # ====================================================
+              # SPECIAL UNINSTALLER EXCEPTIONS
+              # ====================================================
+
+              $CommandToRun = $uninstall
+
+              # ----------------------------------------------------
+              # PostgreSQL
+              # ----------------------------------------------------
+              # Версия определяется автоматически по имени из реестра.
+              # Не зависит от PostgreSQL 12/13/14/15/16/etc.
+              if ($name -match '(?i)PostgreSQL') {
+
+                Write-Host "[SPECIAL] PostgreSQL detected." -ForegroundColor Yellow
+                Write-Host "[SPECIAL] Using unattended uninstall." -ForegroundColor Yellow
+
+                $CommandToRun = "$uninstall --mode unattended --unattendedmodeui none"
+              }
+
+              # ----------------------------------------------------
+              # Microsoft Edge WebView2 Runtime
+              # ----------------------------------------------------
+              elseif ($name -match '(?i)Microsoft Edge WebView2 Runtime|WebView2 Runtime') {
+
+                Write-Host "[SPECIAL] Microsoft Edge WebView2 detected." -ForegroundColor Yellow
+                Write-Host "[SPECIAL] Adding --force-uninstall." -ForegroundColor Yellow
+
+                $CommandToRun = "$uninstall --force-uninstall"
+              }
+
+              # ----------------------------------------------------
+              # Microsoft Edge
+              # ----------------------------------------------------
+              elseif ($name -match '(?i)^Microsoft Edge$') {
+
+                Write-Host "[SPECIAL] Microsoft Edge detected." -ForegroundColor Yellow
+                Write-Host "[SPECIAL] Adding --force-uninstall." -ForegroundColor Yellow
+
+                $CommandToRun = "$uninstall --force-uninstall"
+              }
+
+              # ====================================================
+              # EXECUTE UNINSTALLER
+              # ====================================================
+
+              Write-Host "[*] Executing: $CommandToRun" -ForegroundColor Gray
+
               $process = Start-Process `
                 -FilePath 'cmd.exe' `
-                -ArgumentList "/c $uninstall" `
+                -ArgumentList "/c $CommandToRun" `
                 -Wait `
                 -PassThru `
                 -NoNewWindow
@@ -2608,7 +2655,6 @@ runs:
             $failed++
           }
         }
-
 
         # ========================================================
         # SUMMARY
