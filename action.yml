@@ -1569,40 +1569,7 @@ runs:
         else {
           Write-Host "[NOT FOUND] $path"
         }
-
-    # ============================================================
-    # REMOVE LLVM
-    # ============================================================
-
-    - name: Remove LLVM
-      if: ${{ inputs.enable == 'true' }}
-      shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Continue'
-
-        $path = "$env:SYSTEMDRIVE\Program Files\LLVM"
-
-        if (Test-Path -LiteralPath $path) {
-          Write-Host "[REMOVE] $path"
-
-          try {
-            Remove-Item `
-              -LiteralPath $path `
-              -Recurse `
-              -Force `
-              -ErrorAction Stop
-
-            Write-Host "[REMOVED] $path"
-          }
-          catch {
-            Write-Warning "Failed to completely remove $path"
-            Write-Warning $_
-          }
-        }
-        else {
-          Write-Host "[NOT FOUND] $path"
-        }
-
+        
     # ============================================================
     # REMOVE Microsoft SQL Server
     # ============================================================
@@ -2657,6 +2624,39 @@ runs:
         Write-Host "Skipped : $skipped"
         Write-Host "Failed  : $failed"
         Write-Host "============================================================"
+
+    # ============================================================
+    # REMOVE LLVM
+    # ============================================================
+
+    - name: Remove LLVM
+      if: ${{ inputs.enable == 'true' }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+
+        $path = "$env:SYSTEMDRIVE\Program Files\LLVM"
+
+        if (Test-Path -LiteralPath $path) {
+          Write-Host "[REMOVE] $path"
+
+          try {
+            Remove-Item `
+              -LiteralPath $path `
+              -Recurse `
+              -Force `
+              -ErrorAction Stop
+
+            Write-Host "[REMOVED] $path"
+          }
+          catch {
+            Write-Warning "Failed to completely remove $path"
+            Write-Warning $_
+          }
+        }
+        else {
+          Write-Host "[NOT FOUND] $path"
+        }
 
     - name: Remove PSModuleAnalysisCachePath
       if: ${{ inputs.enable == 'true' }}
