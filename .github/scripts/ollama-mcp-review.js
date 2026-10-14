@@ -6,7 +6,6 @@ async function run() {
   console.log("🚀 Запуск ИИ-агента аналитики кода...");
 
   // 1. Инициализируем транспорт до Filesystem MCP сервера
-  // Передаем текущую рабочую директорию раннера (process.cwd()), где лежит код экшена
   const transport = new StdioClientTransport({
     command: "npx",
     args: ["-y", "@modelcontextprotocol/server-filesystem", process.cwd()]
@@ -37,7 +36,7 @@ async function run() {
   // 3. Формируем элитный промпт для Qwen 2.5 Coder
   const prompt = `
 Ты — ведущий ИИ-архитектор безопасности и главный инспектор качества кода GitHub Actions.
-Перед тобой код огромного Composite Action (файл action.yml) объемом 3000 строк. Проведи глубокий технический аудит.
+Перед тобой код огромного Composite Action (файл action.yml). Проведи глубокий технический аудит.
 
 Сформируй отчет строго в формате Markdown, используя следующие разделы:
 
@@ -56,36 +55,43 @@ async function run() {
 * **Шаг [Название шага]:** Описание проблемы. *Почему это опасно?* Как исправить правильно. По возможности укажи примерные строки или блоки.
 
 ## 🛡️ Безопасность (Security Check)
-Проверь блоки 'run:'. Убедись, что пользовательский ввод из inputs не подставляется напрямую в bash без экранирования. Напиши вердикт безопасности.
+Проведи проверку блоков 'run:'. Убедись, что пользовательский ввод из inputs не подставляется напрямую в bash без экранирования. Напиши вердикт безопасности.
 
 ## 🏁 Итоговое заключение
-Если критических багов нет и код идеален, обязательно добавь в самый конец фразу "SUCCESS". В противном случае опиши общие рекомендации по рефакторингу этого 3000-строчного монстра.
+Если критических багов нет и код идеален, обязательно добавь в самый конец фразу "SUCCESS". В противном случае опиши общие рекомендации по рефакторингу.
 
-КОД ФАЙЛА ДЛЯ СКАНИРОВАНИЯ:
+КОД ФАЙЛА ДЛЯ СКАНiroВАНИЯ:
 \`\`\`yaml
-\${yamlCode}
+${yamlCode}
 \`\`\`
 `;
 
   console.log("🤖 Отправляем тяжелый запрос в локальную Ollama (qwen2.5-coder:7b-instruct-q8_0)...");
-  console.log("⏳ Это займет некоторое время, так как файл огромный, а модель думает на CPU серверного процессора...");
+  console.log("⏳ Максимальное время ожидания ответа установлено на 5 минут...");
 
-  // 4. Делаем запрос к локальному API Ollama
+  // Создаем контроллер для установки таймаута на 5 минут (300000 мс)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 300 * 1000);
+
+  // 4. Делаем запрос к исправленному локальному API Ollama
   try {
-    const response = await fetch("http://127.0.0", {
+    const response = await fetch("http://127.0.0.1:11434/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
       body: JSON.stringify({
         model: "qwen2.5-coder:7b-instruct-q8_0", 
         prompt: prompt,
         stream: false,
         options: {
-          num_ctx: 16384,     // Огромное окно контекста на 16к токенов под 3к строк YAML
+          num_ctx: 16384,     // Окно контекста на 16к токенов
           temperature: 0.2,   // Минимальная температура для строгого технического разбора
           top_p: 0.9
         }
       })
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`Ошибка сервера Ollama: ${response.statusText}`);
@@ -110,8 +116,13 @@ async function run() {
     }
 
   } catch (error) {
-    console.error("❌ Произошла ошибка при общении с API Ollama:");
-    console.error(error);
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      console.error("❌ Превышен лимит времени ожидания (5 минут). Ollama не успела обработать огромный файл на CPU.");
+    } else {
+      console.error("❌ Произошла ошибка при общении с API Ollama:");
+      console.error(error);
+    }
     process.exit(1);
   }
 }
