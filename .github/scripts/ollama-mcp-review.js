@@ -1,14 +1,18 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import fs from "fs";
+import path from "path";
 
 async function run() {
   console.log("🚀 Запуск ИИ-агента аналитики кода...");
 
-  // 1. Инициализируем транспорт до Filesystem MCP сервера с увеличенным таймаутом (3 минуты)
+  // Определяем рабочую директорию через GITHUB_WORKSPACE или process.cwd()
+  const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
+
+  // 1. Инициализируем транспорт до Filesystem MCP сервера, передавая корень репозитория
   const transport = new StdioClientTransport({
-    command: "npx",
-    args: ["-y", "@modelcontextprotocol/server-filesystem", process.cwd()],
+    command: "mcp-server-filesystem",
+    args: [workspaceDir],
     timeout: 180000
   });
 
@@ -18,11 +22,12 @@ async function run() {
   await mcpClient.connect(transport);
   console.log("🟢 MCP сервер успешно подключен и готов к чтению файлов.");
 
-  // 2. Считываем файл action.yml через инструмент MCP
+  // 2. Считываем файл action.yml через инструмент MCP, используя абсолютный путь через workspace
   console.log("📂 Запрос на чтение файла action.yml через инструмент MCP...");
   let yamlCode = "";
   try {
-    const fileContent = await mcpClient.callTool("read_file", { path: "action.yml" });
+    const targetFilePath = path.join(workspaceDir, "action.yml");
+    const fileContent = await mcpClient.callTool("read_file", { path: targetFilePath });
     yamlCode = fileContent.content.text; 
     console.log("✅ Файл action.yml успешно прочитан и загружен в контекст.");
   } catch (error) {
@@ -53,7 +58,7 @@ async function run() {
 
 ## 🔍 Детальный разбор проблемных мест
 Выведи списком конкретные куски кода. Формат:
-* **Шаг [Название шага]:** Описание проблемы. *Почему это опасно?* Как исправить правильно. По возможности укажи примерные строки или блоки.
+- **Шаг [Название шага]:** Описание проблемы. *Почему это опасно?* Как исправить правильно. По возможности укажи примерные строки или блоки.
 
 ## 🛡️ Безопасность (Security Check)
 Проведи проверку блоков 'run:'. Убедись, что пользовательский ввод из inputs не подставляется напрямую в bash без экранирования. Напиши вердикт безопасности.
@@ -70,7 +75,6 @@ ${yamlCode}
   console.log("🤖 Отправляем тяжелый запрос в локальную Ollama (qwen2.5-coder:7b-instruct-q8_0)...");
   console.log("⏳ Максимальное время ожидания ответа установлено на 5 минут...");
 
-  // Создаем контроллер для установки таймаута на 5 минут (300000 мс) для запроса к Ollama
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 300 * 1000);
 
@@ -85,8 +89,8 @@ ${yamlCode}
         prompt: prompt,
         stream: false,
         options: {
-          num_ctx: 16384,     // Окно контекста на 16к токенов
-          temperature: 0.2,   // Минимальная температура для строгого технического разбора
+          num_ctx: 16384,
+          temperature: 0.2,
           top_p: 0.9
         }
       })
@@ -105,8 +109,9 @@ ${yamlCode}
     console.log(aiVerdict);
     console.log("=======================================\n");
 
-    // 5. Записываем отчет в файл аналитики прямо в корень репозитория
-    fs.writeFileSync("analyzing-ai.md", aiVerdict, "utf-8");
+    // 5. Записываем отчет в файл аналитики прямо в корень репозитория через workspace
+    const reportPath = path.join(workspaceDir, "analyzing-ai.md");
+    fs.writeFileSync(reportPath, aiVerdict, "utf-8");
     console.log("💾 Отчет успешно сохранен в файл analyzing-ai.md");
 
     // 6. Проверяем, нашел ли ИИ критические ошибки
