@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 
 async function run() {
-  console.log("🚀 Запуск ИИ-агента аналитики кода (Model: 7B + Beautified Report)...");
+  console.log("🚀 Запуск ИИ-агента аналитики кода (Model: 14B Heavy + Ultra Beautified Report)...");
 
   const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
   const targetFilePath = path.join(workspaceDir, "action.yml");
@@ -22,7 +22,7 @@ async function run() {
   const now = new Date();
   
   const optionsEkb = { timeZone: 'Asia/Yekaterinburg', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-  const timeEkb = new Intl.DateTimeFormat('ru-RU', optionsEkb).format(now); // формат: DD.MM.YYYY, HH:mm:ss
+  const timeEkb = new Intl.DateTimeFormat('ru-RU', optionsEkb).format(now);
   
   const optionsUtc = { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
   const timeUtc = new Intl.DateTimeFormat('ru-RU', optionsUtc).format(now);
@@ -30,73 +30,75 @@ async function run() {
   const dateFileStr = now.toISOString().split('T')[0]; // YYYY-MM-DD для имени файла
 
   const prompt = `
-You are a senior AI security architect and code quality inspector for GitHub Actions.
-Analyze the provided Composite Action code (action.yml) strictly.
+You are a Lead AI Security Architect and Code Quality Specialist for GitHub Actions.
+Analyze the provided Composite Action code (action.yml) with maximum precision.
 
-CRITICAL RULE: DO NOT copy the source code of action.yml into your response. 
-Structure your report cleanly using rich Markdown, callout blocks (> [!NOTE]), tables, and emojis to make it look professional.
+CRITICAL RULES:
+1. DO NOT copy the whole source code of action.yml into your response.
+2. Structure your report cleanly using Markdown callouts (> [!NOTE], > [!WARNING], > [!IMPORTANT]), tables, badges, and clean formatting.
+3. Feel free to provide deep, detailed technical analysis if you find non-trivial architectural patterns or potential edge cases. Depth of detail is welcome!
 
-Use the exact sections below:
+Required structure:
 
 # 🕵️‍♂️ Automated AI Code Audit & Security Report
 
-> **📊 Meta Information:**
-> - **Branch:** \`${branchName}\`
-> - **Time (EKB, UTC+5):** \`${timeEkb}\`
-> - **Time (UTC):** \`${timeUtc}\`
-> - **Engine:** \`qwen2.5-coder:7b-instruct\`
+> **📊 Audit Metadata:**
+> - **Target Branch:** \`${branchName}\`
+> - **Execution Time (EKB, UTC+5):** \`${timeEkb}\`
+> - **Execution Time (UTC):** \`${timeUtc}\`
+> - **AI Engine:** \`qwen2.5-coder:14b-instruct\`
 
 ## 📌 Executive Summary
-Brief overview of what this configuration does and its architectural purpose.
+High-level overview of what this workflow/action performs, its purpose, and overall code hygiene.
 
 ## 📊 Criticality & Metrics Table
-| Threat Level | Status / Count | Description & Impact |
+| Severity Level | Count / Status | Description & Security Impact |
 | :--- | :--- | :--- |
-| 🔴 Critical Bug | [Count & Details] | Logic broken, action will fail |
-| 🟡 Medium Vulnerability | [Count & Details] | Potential script injection or unsafe context usage |
-| 🟢 Optimization | [Count & Details] | Redundant steps or performance tips |
+| 🔴 Critical Bug | [Count] | Broken logic or steps that will fail execution |
+| 🟡 Vulnerability | [Count] | Unsafe context usage, potential injection, or weak permissions |
+| 🟢 Optimization | [Count] | Performance bottlenecks, redundant steps, maintainability tips |
 
-## 🔍 Detailed Breakdown of Steps
-- **Step Name:** Analysis of logic, potential edge cases, and recommendations.
+## 🔍 Deep Dive Step Analysis
+Break down each key step or block. Provide code snippets for fixes where appropriate.
 
-## 🛡️ Security Check
-Verdict on 'run:' execution blocks and environment safety.
+## 🛡️ Security & Hardening Check
+Verdict on \`run:\` blocks, shell safety, secrets handling, and system privileges.
 
-## 🏁 Final Conclusion
-SUCCESS (or warning if issues found).
+## 🏁 Final Verdict
+State "SUCCESS" if clean, or highlight action items required.
 
 ---
 
 # 🇷🇺 РУССКАЯ ВЕРСИЯ ОТЧЕТА (Russian Translation)
 
-Переведи весь предыдущий аналитический отчет на русский язык, сохранив красивое оформление, таблицы и блоки:
+Переведи весь прошлый отчет на русский язык. Сохрани стильное оформление, красивые таблицы, блоки подсветок (> [!NOTE]) и дай детальный понятный разбор:
 
 # 🕵️‍♂️ Автоматический ИИ-Аудит Кода и Безопасности
 
-> **📊 Мета-информация:**
-> - **Ветка:** \`${branchName}\`
-> - **Время (ЕКБ, UTC+5):** \`${timeEkb}\`
-> - **Время (UTC):** \`${timeUtc}\`
-> - **Движок:** \`qwen2.5-coder:7b-instruct\`
+> **📊 Мета-информация аудита:**
+> - **Целевая ветка:** \`${branchName}\`
+> - **Время выполнения (ЕКБ, UTC+5):** \`${timeEkb}\`
+> - **Время выполнения (UTC):** \`${timeUtc}\`
+> - **Движок ИИ:** \`qwen2.5-coder:14b-instruct\`
 
 ## 📌 Краткая сводка
-Обзор назначения файла и его архитектуры.
+Обзор работы action.yml, архитектуры и общего качества кода.
 
 ## 📊 Таблица критичности и метрик
-| Уровень угрозы | Статус / Количество | Описание и влияние |
+| Уровень риска | Статус / Кол-во | Описание и влияние на безопасность |
 | :--- | :--- | :--- |
-| 🔴 Критический баг | [Оценка и детали] | Логика сломана, экшен упадет |
-| 🟡 Средняя уязвимость | [Оценка и детали] | Потенциальный Script Injection через контексты |
-| 🟢 Оптимизация | [Оценка и детали] | Избыточные шаги |
+| 🔴 Критический баг | [Количество] | Ошибки в логике, при которых шаг упадет |
+| 🟡 Уязвимость | [Количество] | Опасные контексты, риск инъекций или лишние права |
+| 🟢 Оптимизация | [Количество] | Лишние действия, скорость работы и чистота кода |
 
-## 🔍 Детальный разбор шагов
-- **Название шага:** Анализ логики, краевых случаев и рекомендации.
+## 🔍 Детальный технический разбор
+Разбери ключевые шаги. Если нужно — предложи точные варианты исправлений в виде фрагментов кода.
 
-## 🛡️ Безопасность (Security Check)
-Вердикт безопасности по блокам 'run:'.
+## 🛡️ Безопасность и защита (Security Check)
+Вердикт по блокам \`run:\`, проверке контекстов и работе с окружением.
 
 ## 🏁 Итоговое заключение
-SUCCESS (или описание статуса).
+Напиши "SUCCESS", если критических проблем нет, или перечисли необходимые правки.
 
 КОД ФАЙЛА ДЛЯ АНАЛИЗА:
 \`\`\`yaml
@@ -104,10 +106,10 @@ ${yamlCode}
 \`\`\`
 `;
 
-  console.log("🤖 Отправляем запрос в Ollama (qwen2.5-coder:7b-instruct)...");
+  console.log("🤖 Отправляем запрос в Ollama (qwen2.5-coder:14b-instruct)...");
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 900 * 1000); // 15 минут лимит
+  const timeoutId = setTimeout(() => controller.abort(), 900 * 1000); // 15 минут
 
   try {
     const response = await fetch("http://127.0.0.1:11434/api/generate", {
@@ -115,12 +117,12 @@ ${yamlCode}
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        model: "qwen2.5-coder:7b-instruct", 
+        model: "qwen2.5-coder:14b-instruct", 
         prompt: prompt,
         stream: false,
         options: {
           num_ctx: 4096,
-          temperature: 0.1
+          temperature: 0.15 // Небольшой вариатив для более красивого описания
         }
       })
     });
@@ -134,16 +136,15 @@ ${yamlCode}
     const result = await response.json();
     const aiVerdict = result.response.trim();
 
-    console.log("\n====== [ВЕРДИКТ ЛОКАЛЬНОГО ИИ (7B)] ======");
+    console.log("\n====== [ВЕРДИКТ ЛОКАЛЬНОГО ИИ (14B)] ======");
     console.log(aiVerdict);
-    console.log("===========================================\n");
+    console.log("============================================\n");
 
     const reportsDir = path.join(workspaceDir, "ai-reports");
     if (!fs.existsSync(reportsDir)) {
       fs.mkdirSync(reportsDir, { recursive: true });
     }
 
-    // Имя файла: audit-<ветка>-<дата>.md
     const reportFileName = `audit-${branchName}-${dateFileStr}.md`;
     const reportPath = path.join(reportsDir, reportFileName);
     
