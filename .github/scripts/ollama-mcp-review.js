@@ -17,8 +17,11 @@ async function run() {
   }
 
   const branchName = process.env.GITHUB_REF_NAME || "dynamic-branch";
+  
+  // Генерируем красивую дату для уникальности файла отчета
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0]; // формат: YYYY-MM-DD
 
-  // ДВУХЪЯЗЫЧНЫЙ ПРОМПТ: Сначала английский анализ, затем полный перевод на русский
   const prompt = `
 You are a senior AI security architect and code quality inspector for GitHub Actions.
 Analyze the provided Composite Action code (action.yml) strictly.
@@ -27,7 +30,7 @@ CRITICAL RULE: DO NOT copy the source code of action.yml into your response. Onl
 
 Structure your report in Markdown using the exact sections below:
 
-# 🕵️‍♂️ Automated AI Code Audit (Branch: ${branchName})
+# 🕵️‍♂️ Automated AI Code Audit (Branch: ${branchName} | Date: ${dateStr})
 
 ## 📊 Criticality Summary Table
 | Threat Level | Count | Description |
@@ -51,7 +54,7 @@ If there are no critical bugs, add the word "SUCCESS" at the very end.
 
 Переведи весь предыдущий аналитический отчет на русский язык, сохранив структуру разделов, таблицы и вердикт:
 
-# 🕵️‍♂️ Автоматический ИИ-Аудит Кода (Ветка: ${branchName})
+# 🕵️‍♂️ Автоматический ИИ-Аудит Кода (Ветка: ${branchName} | Дата: ${dateStr})
 
 ## 📊 Сводная таблица критичности
 | Уровень угрозы | Количество | Описание |
@@ -78,7 +81,7 @@ ${yamlCode}
   console.log("🤖 Отправляем запрос в Ollama (qwen2.5-coder:1.5b-instruct)...");
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 300 * 1000);
+  const timeoutId = setTimeout(() => controller.abort(), 900 * 1000); // 15 минут лимит
 
   try {
     const response = await fetch("http://127.0.0.1:11434/api/generate", {
@@ -109,14 +112,23 @@ ${yamlCode}
     console.log(aiVerdict);
     console.log("=======================================\n");
 
-    const reportPath = path.join(workspaceDir, "analyzing-ai.md");
+    // Создаем папку ai-reports, если её еще нет
+    const reportsDir = path.join(workspaceDir, "ai-reports");
+    if (!fs.existsSync(reportsDir)) {
+      fs.mkdirSync(reportsDir, { recursive: true });
+    }
+
+    // Путь к файлу внутри папки: ai-reports/audit-<ветка>-<дата>.md
+    const reportFileName = `audit-${branchName}-${dateStr}.md`;
+    const reportPath = path.join(reportsDir, reportFileName);
+    
     fs.writeFileSync(reportPath, aiVerdict, "utf-8");
-    console.log("💾 Отчет успешно сохранен в файл analyzing-ai.md");
+    console.log(`💾 Отчет успешно сохранен в папку: ai-reports/${reportFileName}`);
 
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      console.error("❌ Превышен лимит времени ожидания Ollama.");
+      console.error("❌ Превышен лимит времени ожидания Ollama (15 минут истекли).");
     } else {
       console.error("❌ Ошибка при общении с API Ollama:", error);
     }
