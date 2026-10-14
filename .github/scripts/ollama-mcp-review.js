@@ -1,15 +1,25 @@
 import fs from "fs";
 import path from "path";
+import { fetch, Agent } from "undici";
+
+// Отключаем жесткие дефолтные таймауты undici (Node.js fetch), 
+// чтобы Ollama могла генерировать 14B/32B хоть 20 минут без разрыва соединения
+const customAgent = new Agent({
+  headersTimeout: 0,
+  bodyTimeout: 0,
+  connectTimeout: 30000
+});
 
 async function queryOllama(model, prompt) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 900 * 1000); // 15 минут
+  const timeoutId = setTimeout(() => controller.abort(), 1200 * 1000); // 20 минут обложки
 
   try {
     const response = await fetch("http://127.0.0.1:11434/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
+      dispatcher: customAgent, // Применяем агент без таймаутов
       body: JSON.stringify({
         model: model,
         prompt: prompt,
@@ -36,7 +46,7 @@ async function queryOllama(model, prompt) {
 }
 
 async function run() {
-  console.log("🚀 Запуск ИИ-агента аналитики кода (Dual-Language Mode + Timestamp Filenames)...");
+  console.log("🚀 Запуск ИИ-агента аналитики кода (Undici Timeout Fix + 14B)...");
 
   const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
   const targetFilePath = path.join(workspaceDir, "action.yml");
@@ -53,14 +63,12 @@ async function run() {
   const branchName = process.env.GITHUB_REF_NAME || "dynamic-branch";
   const now = new Date();
   
-  // Красивый вывод времени для тела отчета
   const optionsEkb = { timeZone: 'Asia/Yekaterinburg', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
   const timeEkb = new Intl.DateTimeFormat('ru-RU', optionsEkb).format(now);
   
   const optionsUtc = { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
   const timeUtc = new Intl.DateTimeFormat('ru-RU', optionsUtc).format(now);
   
-  // Формируем уникальную метку даты и времени для ИМЕНИ ФАЙЛА (по ЕКБ: YYYY-MM-DD_HH-MM)
   const ekbParts = new Intl.DateTimeFormat('ru-RU', { 
     timeZone: 'Asia/Yekaterinburg', 
     year: 'numeric', month: '2-digit', day: '2-digit', 
@@ -72,7 +80,7 @@ async function run() {
 
   const modelName = "qwen2.5-coder:14b-instruct";
 
-  // --- 1. ПРОМПТ НА АНГЛИЙСКОМ ---
+  // --- ПРОМПТ EN ---
   const promptEN = `
 You are a Lead AI Security Architect and Code Quality Specialist for GitHub Actions.
 Analyze the provided Composite Action code (action.yml) with maximum precision.
@@ -115,7 +123,7 @@ ${yamlCode}
 \`\`\`
 `;
 
-  // --- 2. ПРОМПТ НА РУССКОМ ---
+  // --- ПРОМПТ RU ---
   const promptRU = `
 Ты — ведущий AI-архитектор безопасности и инспектор качества кода для GitHub Actions.
 Проанализируй предоставленный код Composite Action (action.yml) с максимальной точностью.
@@ -164,25 +172,23 @@ ${yamlCode}
   }
 
   try {
-    // Генерация EN отчета
     console.log("🤖 [1/2] Генерируем Английский отчет...");
     const reportEN = await queryOllama(modelName, promptEN);
     const fileNameEN = `audit-${branchName}-${dateTimeFileStr}-en.md`;
     fs.writeFileSync(path.join(reportsDir, fileNameEN), reportEN, "utf-8");
     console.log(`💾 Английский отчет сохранен: ai-reports/${fileNameEN}`);
 
-    // Генерация RU отчета
     console.log("🤖 [2/2] Генерируем Русский отчет...");
     const reportRU = await queryOllama(modelName, promptRU);
     const fileNameRU = `audit-${branchName}-${dateTimeFileStr}-ru.md`;
     fs.writeFileSync(path.join(reportsDir, fileNameRU), reportRU, "utf-8");
     console.log(`💾 Русский отчет сохранен: ai-reports/${fileNameRU}`);
 
-    console.log("\n🎉 Оба отчета успешно сгенерированы с уникальными временными метками!");
+    console.log("\n🎉 Оба отчета успешно сгенерированы!");
 
   } catch (error) {
     if (error.name === 'AbortError') {
-      console.error("❌ Превышен лимит времени ожидания Ollama (15 минут истекли).");
+      console.error("❌ Превышен лимит времени ожидания Ollama (20 минут истекли).");
     } else {
       console.error("❌ Ошибка при генерации отчетов:", error);
     }
