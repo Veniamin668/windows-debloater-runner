@@ -9,7 +9,7 @@ async function run() {
   // Определяем рабочую директорию через GITHUB_WORKSPACE или process.cwd()
   const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
 
-  // 1. Инициализируем транспорт до Filesystem MCP сервера, передавая корень репозитория
+  // 1. Инициализируем транспорт до Filesystem MCP сервера
   const transport = new StdioClientTransport({
     command: "mcp-server-filesystem",
     args: [workspaceDir],
@@ -22,12 +22,19 @@ async function run() {
   await mcpClient.connect(transport);
   console.log("🟢 MCP сервер успешно подключен и готов к чтению файлов.");
 
-  // 2. Считываем файл action.yml через инструмент MCP, используя абсолютный путь через workspace
+  // 2. Считываем файл action.yml через инструмент MCP с жестким таймаутом в 3 минуты (180000 мс)
   console.log("📂 Запрос на чтение файла action.yml через инструмент MCP...");
   let yamlCode = "";
   try {
     const targetFilePath = path.join(workspaceDir, "action.yml");
-    const fileContent = await mcpClient.callTool("read_file", { path: targetFilePath });
+    
+    // Передаем options с явным таймаутом третьим аргументом, чтобы перебить дефолтные 60 секунд SDK
+    const fileContent = await mcpClient.callTool(
+      "read_file", 
+      { path: targetFilePath },
+      { timeout: 180000 }
+    );
+    
     yamlCode = fileContent.content.text; 
     console.log("✅ Файл action.yml успешно прочитан и загружен в контекст.");
   } catch (error) {
@@ -66,7 +73,7 @@ async function run() {
 ## 🏁 Итоговое заключение
 Если критических багов нет и код идеален, обязательно добавь в самый конец фразу "SUCCESS". В противном случае опиши общие рекомендации по рефакторингу.
 
-КОД ФАЙЛА ДЛЯ СКАНИРОВАНИЯ:
+КОД ФАЙЛА ДЛЯ СКАНУИРОВАНИЯ:
 \`\`\`yaml
 ${yamlCode}
 \`\`\`
