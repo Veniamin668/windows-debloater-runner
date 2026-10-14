@@ -142,6 +142,8 @@ Prints a cleanup summary.
 
 Supported uninstallers include MSI, Inno Setup and NSIS. Overall, starting with the v7 branch, the tool for removing unnecessary components has gained the ability to remove all unknown executable files—such as those that are not MSI installers.
 
+I don't remember what I added to this branch, as the code is too voluminous. XD
+
 Applications with unsupported uninstallers are skipped instead of being forcefully deleted.
 
 Warning
