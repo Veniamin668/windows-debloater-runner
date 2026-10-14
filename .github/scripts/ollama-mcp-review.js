@@ -36,7 +36,7 @@ async function queryOllama(model, prompt) {
 }
 
 async function run() {
-  console.log("🚀 Запуск ИИ-агента аналитики кода (Dual-Language Mode)...");
+  console.log("🚀 Запуск ИИ-агента аналитики кода (Dual-Language Mode + Timestamp Filenames)...");
 
   const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
   const targetFilePath = path.join(workspaceDir, "action.yml");
@@ -53,13 +53,23 @@ async function run() {
   const branchName = process.env.GITHUB_REF_NAME || "dynamic-branch";
   const now = new Date();
   
+  // Красивый вывод времени для тела отчета
   const optionsEkb = { timeZone: 'Asia/Yekaterinburg', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
   const timeEkb = new Intl.DateTimeFormat('ru-RU', optionsEkb).format(now);
   
   const optionsUtc = { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
   const timeUtc = new Intl.DateTimeFormat('ru-RU', optionsUtc).format(now);
   
-  const dateFileStr = now.toISOString().split('T')[0];
+  // Формируем уникальную метку даты и времени для ИМЕНИ ФАЙЛА (по ЕКБ: YYYY-MM-DD_HH-MM)
+  const ekbParts = new Intl.DateTimeFormat('ru-RU', { 
+    timeZone: 'Asia/Yekaterinburg', 
+    year: 'numeric', month: '2-digit', day: '2-digit', 
+    hour: '2-digit', minute: '2-digit', hour12: false 
+  }).formatToParts(now);
+  
+  const partMap = Object.fromEntries(ekbParts.map(p => [p.type, p.value]));
+  const dateTimeFileStr = `${partMap.year}-${partMap.month}-${partMap.day}_${partMap.hour}-${partMap.minute}`;
+
   const modelName = "qwen2.5-coder:14b-instruct";
 
   // --- 1. ПРОМПТ НА АНГЛИЙСКОМ ---
@@ -157,18 +167,18 @@ ${yamlCode}
     // Генерация EN отчета
     console.log("🤖 [1/2] Генерируем Английский отчет...");
     const reportEN = await queryOllama(modelName, promptEN);
-    const fileNameEN = `audit-${branchName}-${dateFileStr}-en.md`;
+    const fileNameEN = `audit-${branchName}-${dateTimeFileStr}-en.md`;
     fs.writeFileSync(path.join(reportsDir, fileNameEN), reportEN, "utf-8");
     console.log(`💾 Английский отчет сохранен: ai-reports/${fileNameEN}`);
 
     // Генерация RU отчета
     console.log("🤖 [2/2] Генерируем Русский отчет...");
     const reportRU = await queryOllama(modelName, promptRU);
-    const fileNameRU = `audit-${branchName}-${dateFileStr}-ru.md`;
+    const fileNameRU = `audit-${branchName}-${dateTimeFileStr}-ru.md`;
     fs.writeFileSync(path.join(reportsDir, fileNameRU), reportRU, "utf-8");
     console.log(`💾 Русский отчет сохранен: ai-reports/${fileNameRU}`);
 
-    console.log("\n🎉 Оба отчета успешно сгенерированы!");
+    console.log("\n🎉 Оба отчета успешно сгенерированы с уникальными временными метками!");
 
   } catch (error) {
     if (error.name === 'AbortError') {
