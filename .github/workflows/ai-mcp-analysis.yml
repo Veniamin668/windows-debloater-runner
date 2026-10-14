@@ -65,20 +65,16 @@ jobs:
           # Запускаем скрипт, явно передавая переменной окружения абсолютный путь к корню репозитория
           REPO_PATH="$GITHUB_WORKSPACE" node .github/scripts/ollama-mcp-review.js
 
-
-      # Финал: ИИ фиксирует отчет в файл analyzing-ai.md прямо внутри той динамической ветки, куда был пуш
       - name: Commit and Push AI Analysis Report to Active Branch
-        if: always()
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@://github.com"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
-          # Проверяем, изменился ли файл отчета ИИ по сравнению с предыдущим состоянием в этой ветке
           if git diff --quiet analyzing-ai.md; then
-            echo "Новых багов или изменений в коде экшена не обнаружено. Отчет актуален."
+            echo "No changes detected in AI report. Skipping commit."
           else
             git add analyzing-ai.md
-            # Флаг [skip ci] КРИТИЧЕСКИ ВАЖЕН — он запрещает гитхабу запускать этот же экшен повторно на коммит самого бота
-            git commit -m "chore: авто-обновление аналитики кода от ИИ в ветке ${ { github.ref_name } } [skip ci]"
-            git push origin HEAD:${{ github.ref }}
-          fi
+            git commit -m "chore: auto-update AI code analysis report (${{ github.ref_name }}) [skip ci]"
+            git push origin HEAD:${{ github.ref_name }}
+            fi
+    
