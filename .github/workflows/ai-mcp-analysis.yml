@@ -1,12 +1,13 @@
 name: Total Local Ollama + MCP Review (All Branches)
 
 on:
+  workflow_dispatch: 
   push:
-    # Убираем привязку к main/master. Теперь трекается абсолютно любой пуш в любую динамическую ветку!
     branches:
       - '**' 
     paths:
-      - '**/action.yml' # Запускается, только если в пуше реально изменился или добавился экшен
+      - '**/action.yml' 
+
 
 # Даем полные права на чтение кода и пуш обновленного отчета ИИ обратно в ветку
 permissions:
