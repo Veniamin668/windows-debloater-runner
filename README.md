@@ -98,7 +98,7 @@ Usage
 Add the action to your workflow:
 ``` code
       - name: Debloat windows
-        uses: Veniamin668/windows-debloater-runner@v7
+        uses: Veniamin668/windows-debloater-runner@v8
         with:
           enable: 'true'
           azure-del: 'true'
@@ -109,21 +109,24 @@ Add the action to your workflow:
           oobe-disable: 'true'
           wsl-rename: 'true'
           npm-del: 'true'
+          install-zen: 'true'
 ```
 Set enable to 'false' to disable the cleanup
-azure-del false to disable delete Azure modules folder 
+```azure-del``` false to disable delete Azure modules folder 
 
-choco-del to delete software in chocolatey,
+```choco-del``` to delete software in chocolatey,
 
-uwp-del delete uwp apps. 
+```uwp-del``` delete uwp apps. 
 
-del-installer-user removes the "installer" user and their folder, which takes up quite a bit of space. 
+```del-installer-user``` removes the "installer" user and their folder, which takes up quite a bit of space. 
 
-oobe-disable Renames the WWAHost.exe file by appending "123" to their names to bypass the OOBE privacy settings screen.
+```oobe-disable``` Renames the WWAHost.exe file by appending "123" to their names to bypass the OOBE privacy settings screen.
 
-npm-del remove %SYSTEMDRIVE%\npm folder
+```npm-del``` remove %SYSTEMDRIVE%\npm folder
 
-wsl-rename rename the wsl.exe file by appending "123" to the extension, thereby preventing the WSL update prompt on ARM-based runners
+```install-zen``` - install Zen Browser
+
+```wsl-rename``` rename the wsl.exe file by appending "123" to the extension, thereby preventing the WSL update prompt on ARM-based runners
 
 How it works
 
