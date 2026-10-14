@@ -2,51 +2,15 @@ import fs from "fs";
 import path from "path";
 import { fetch, Agent } from "undici";
 
-// Отключаем жесткие дефолтные таймауты undici (Node.js fetch), 
-// чтобы Ollama могла генерировать 14B/32B хоть 20 минут без разрыва соединения
+// Отключаем таймауты undici для ожидания 32B модели
 const customAgent = new Agent({
   headersTimeout: 0,
   bodyTimeout: 0,
   connectTimeout: 30000
 });
 
-async function queryOllama(model, prompt) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 1200 * 1000); // 20 минут обложки
-
-  try {
-    const response = await fetch("http://127.0.0.1:11434/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: controller.signal,
-      dispatcher: customAgent, // Применяем агент без таймаутов
-      body: JSON.stringify({
-        model: model,
-        prompt: prompt,
-        stream: false,
-        options: {
-          num_ctx: 4096,
-          temperature: 0.15
-        }
-      })
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`Ошибка сервера Ollama: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    return result.response.trim();
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
-  }
-}
-
 async function run() {
-  console.log("🚀 Запуск ИИ-агента аналитики кода (Undici Timeout Fix + 14B)...");
+  console.log("🚀 Запуск ИИ-агента (32B Model + Strict System Prompt)...");
 
   const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
   const targetFilePath = path.join(workspaceDir, "action.yml");
@@ -54,7 +18,7 @@ async function run() {
 
   try {
     yamlCode = fs.readFileSync(targetFilePath, "utf-8");
-    console.log("✅ Файл action.yml успешно прочитан через fs!");
+    console.log("✅ Файл action.yml успешно прочитан!");
   } catch (fsError) {
     console.error("❌ Не удалось прочитать файл action.yml:", fsError);
     process.exit(1);
@@ -78,11 +42,11 @@ async function run() {
   const partMap = Object.fromEntries(ekbParts.map(p => [p.type, p.value]));
   const dateTimeFileStr = `${partMap.year}-${partMap.month}-${partMap.day}_${partMap.hour}-${partMap.minute}`;
 
-  const modelName = "qwen2.5-coder:14b-instruct";
+  // МЕНЯЕМ НА 32B МОДЕЛЬ
+  const modelName = "qwen2.5-coder:32b-instruct";
 
-  // --- ПРОМПТ EN ---
+  // --- 1. ПРОМПТ EN ---
   const promptEN = `
-You are a Lead AI Security Architect and Code Quality Specialist for GitHub Actions.
 Analyze the provided Composite Action code (action.yml) with maximum precision.
 
 CRITICAL RULES:
@@ -123,9 +87,8 @@ ${yamlCode}
 \`\`\`
 `;
 
-  // --- ПРОМПТ RU ---
+  // --- 2. ПРОМПТ RU ---
   const promptRU = `
-Ты — ведущий AI-архитектор безопасности и инспектор качества кода для GitHub Actions.
 Проанализируй предоставленный код Composite Action (action.yml) с максимальной точностью.
 
 КРИТИЧЕСКИЕ ПРАВИЛА:
@@ -171,24 +134,58 @@ ${yamlCode}
     fs.mkdirSync(reportsDir, { recursive: true });
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 1800 * 1000); // 30 минут на 32B модель
+
   try {
-    console.log("🤖 [1/2] Генерируем Английский отчет...");
-    const reportEN = await queryOllama(modelName, promptEN);
+    // === ГЕНЕРАЦИЯ EN ОТЧЕТА ===
+    console.log("🤖 [1/2] Генерируем Английский отчет (32B)...");
+    const resEN = await fetch("http://127.0.0.1:11434/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      dispatcher: customAgent,
+      body: JSON.stringify({
+        model: modelName,
+        system: "You are an expert AI Code Auditor. Respond strictly in English.",
+        prompt: promptEN,
+        stream: false,
+        options: { num_ctx: 4096, temperature: 0.15 }
+      })
+    });
+    const dataEN = await resEN.json();
     const fileNameEN = `audit-${branchName}-${dateTimeFileStr}-en.md`;
-    fs.writeFileSync(path.join(reportsDir, fileNameEN), reportEN, "utf-8");
+    fs.writeFileSync(path.join(reportsDir, fileNameEN), dataEN.response.trim(), "utf-8");
     console.log(`💾 Английский отчет сохранен: ai-reports/${fileNameEN}`);
 
-    console.log("🤖 [2/2] Генерируем Русский отчет...");
-    const reportRU = await queryOllama(modelName, promptRU);
+    // === ГЕНЕРАЦИЯ RU ОТЧЕТА С ЖЕСТКИМ SYSTEM PROMPT ===
+    console.log("🤖 [2/2] Генерируем Русский отчет (32B + Strict System)...");
+    const resRU = await fetch("http://127.0.0.1:11434/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      dispatcher: customAgent,
+      body: JSON.stringify({
+        model: modelName,
+        // ЖЕСТКАЯ УСТАНОВКА ЯЗЫКА НА УРОВНЕ СИСТЕМНОЙ РОЛИ:
+        system: "Ты — русскоязычный ИИ-архитектор. Твоя ТРЕБОВАТЕЛЬНАЯ ОБЯЗАННОСТЬ — писать весь отчет ИСКЛЮЧИТЕЛЬНО НА РУССКОМ ЯЗЫКЕ. Запрещено использовать английский язык где-либо, кроме кода и названий переменных.",
+        prompt: promptRU,
+        stream: false,
+        options: { num_ctx: 4096, temperature: 0.0 } // 0.0 убирает любую склонность сбиваться на инглиш
+      })
+    });
+    const dataRU = await resRU.json();
     const fileNameRU = `audit-${branchName}-${dateTimeFileStr}-ru.md`;
-    fs.writeFileSync(path.join(reportsDir, fileNameRU), reportRU, "utf-8");
+    fs.writeFileSync(path.join(reportsDir, fileNameRU), dataRU.response.trim(), "utf-8");
     console.log(`💾 Русский отчет сохранен: ai-reports/${fileNameRU}`);
 
-    console.log("\n🎉 Оба отчета успешно сгенерированы!");
+    clearTimeout(timeoutId);
+    console.log("\n🎉 Оба 32B-отчета успешно сгенерированы!");
 
   } catch (error) {
+    clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      console.error("❌ Превышен лимит времени ожидания Ollama (20 минут истекли).");
+      console.error("❌ Превышен лимит времени ожидания Ollama (30 минут истекли).");
     } else {
       console.error("❌ Ошибка при генерации отчетов:", error);
     }
