@@ -39,8 +39,8 @@ jobs:
           export OLLAMA_NUM_PARALLEL=1
           ollama serve &
           sleep 5
-          echo "Загружаем Qwen 2.5 Coder 7B Q8 на серверные мощности..."
-          ollama pull qwen2.5-coder:7b-instruct-q8_0
+          echo "Загружаем Qwen 2.5 Coder 1.5B на серверные мощности..."
+          ollama pull qwen2.5-coder:1.5b-instruct
 
       - name: Initialize Filesystem MCP Server Config
         run: |
