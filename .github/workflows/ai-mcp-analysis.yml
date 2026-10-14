@@ -31,10 +31,13 @@ jobs:
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
 
+      - name: Install MCP Filesystem Server
+        run: npm install -g @modelcontextprotocol/server-filesystem
+        
       - name: Configure and Start Ollama
         run: |
           export OLLAMA_NUM_PARALLEL=1
-          ollama serve &
+          # not start ollama serve &
           sleep 5
           echo "Загружаем Qwen 2.5 Coder 7B Q8 на серверные мощности..."
           ollama pull qwen2.5-coder:7b-instruct-q8_0
