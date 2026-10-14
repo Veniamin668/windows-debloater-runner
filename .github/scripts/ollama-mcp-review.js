@@ -1,50 +1,25 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import fs from "fs";
 import path from "path";
 
 async function run() {
-  console.log("🚀 Запуск ИИ-агента аналитики кода с надежным MCP...");
+  console.log("🚀 Запуск ИИ-агента аналитики кода...");
 
   const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
   const targetFilePath = path.join(workspaceDir, "action.yml");
   let yamlCode = "";
 
-  // 1. Пытаемся прочитать через MCP, но с гарантированным фоллбеком на fs, если транспорт тупит
+  // Читаем файл через нативный fs напрямую и без лишних танцев с бубном
   try {
-    console.log("🔗 Подключение к Filesystem MCP серверу...");
-    const transport = new StdioClientTransport({
-      command: "mcp-server-filesystem",
-      args: [workspaceDir],
-      timeout: 180000
-    });
-
-    const mcpClient = new Client({ name: "ollama-mcp-bridge", version: "1.0.0" });
-    await mcpClient.connect(transport);
-    console.log("🟢 MCP сервер подключен. Запрос на чтение action.yml...");
-
-    const fileContent = await mcpClient.callTool(
-      "read_file", 
-      { path: targetFilePath },
-      { timeout: 180000 }
-    );
-    
-    yamlCode = fileContent.content ? fileContent.content.text : JSON.stringify(fileContent);
-    console.log("✅ Файл успешно прочитан через MCP инструмент!");
-  } catch (mcpError) {
-    console.warn("⚠️ MCP транспорт капризничает или отвалился по таймауту. Переходим на быстрое резервное чтение через fs...");
-    try {
-      yamlCode = fs.readFileSync(targetFilePath, "utf-8");
-      console.log("✅ Файл action.yml успешно прочитан через резервный fs!");
-    } catch (fsError) {
-      console.error("❌ Не удалось прочитать файл action.yml даже через fs:", fsError);
-      process.exit(1);
-    }
+    yamlCode = fs.readFileSync(targetFilePath, "utf-8");
+    console.log("✅ Файл action.yml успешно прочитан через fs!");
+  } catch (fsError) {
+    console.error("❌ Не удалось прочитать файл action.yml:", fsError);
+    process.exit(1);
   }
 
   const branchName = process.env.GITHUB_REF_NAME || "динамическая ветка";
 
-  // 2. Формируем промпт для быстрой модели
+  // Формируем промпт для модели
   const prompt = `
 Ты — ведущий ИИ-архитектор безопасности и главный инспектор качества кода GitHub Actions.
 Перед тобой код Composite Action (файл action.yml). Проведи технический аудит.
@@ -122,6 +97,9 @@ ${yamlCode}
     }
     process.exit(1);
   }
+
+  // Принудительно гасим процесс, чтобы Node.js не висел в фоне
+  process.exit(0);
 }
 
 run().catch((err) => {
