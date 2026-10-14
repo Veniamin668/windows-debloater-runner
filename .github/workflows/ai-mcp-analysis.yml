@@ -42,7 +42,7 @@ jobs:
           ollama serve &
           sleep 5
           echo "Загружаем Qwen 2.5 Coder 7B на серверные мощности..."
-          ollama pull qwen2.5-coder:7b-instruct
+          ollama pull qwen2.5-coder:14b-instruct
 
       - name: Initialize Filesystem MCP Server Config
         run: |
