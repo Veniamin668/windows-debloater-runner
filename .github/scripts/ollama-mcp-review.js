@@ -4,49 +4,47 @@ import fs from "fs";
 import path from "path";
 
 async function run() {
-  console.log("🚀 Запуск ИИ-агента аналитики кода с MCP...");
+  console.log("🚀 Запуск ИИ-агента аналитики кода с надежным MCP...");
 
-  // Определяем рабочую директорию через GITHUB_WORKSPACE или process.cwd()
   const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
-
-  // 1. Инициализируем транспорт до Filesystem MCP сервера
-  const transport = new StdioClientTransport({
-    command: "mcp-server-filesystem",
-    args: [workspaceDir],
-    timeout: 180000
-  });
-
-  const mcpClient = new Client({ name: "ollama-mcp-bridge", version: "1.0.0" });
-  
-  console.log("🔗 Подключение к Filesystem MCP серверу...");
-  await mcpClient.connect(transport);
-  console.log("🟢 MCP сервер успешно подключен и готов к работе.");
-
-  // 2. Считываем файл action.yml СТРОГО через инструмент MCP с надежным таймаутом
-  console.log("📂 Запрос на чтение файла action.yml через инструмент MCP...");
+  const targetFilePath = path.join(workspaceDir, "action.yml");
   let yamlCode = "";
+
+  // 1. Пытаемся прочитать через MCP, но с гарантированным фоллбеком на fs, если транспорт тупит
   try {
-    const targetFilePath = path.join(workspaceDir, "action.yml");
-    
+    console.log("🔗 Подключение к Filesystem MCP серверу...");
+    const transport = new StdioClientTransport({
+      command: "mcp-server-filesystem",
+      args: [workspaceDir],
+      timeout: 180000
+    });
+
+    const mcpClient = new Client({ name: "ollama-mcp-bridge", version: "1.0.0" });
+    await mcpClient.connect(transport);
+    console.log("🟢 MCP сервер подключен. Запрос на чтение action.yml...");
+
     const fileContent = await mcpClient.callTool(
       "read_file", 
       { path: targetFilePath },
       { timeout: 180000 }
     );
     
-    // Достаем текст из ответа MCP инструмента
     yamlCode = fileContent.content ? fileContent.content.text : JSON.stringify(fileContent);
-    console.log("✅ Файл action.yml успешно прочитан через MCP инструмент!");
-  } catch (error) {
-    console.error("❌ MCP не смог прочитать файл action.yml. Проверьте путь.");
-    console.error(error);
-    process.exit(1);
+    console.log("✅ Файл успешно прочитан через MCP инструмент!");
+  } catch (mcpError) {
+    console.warn("⚠️ MCP транспорт капризничает или отвалился по таймауту. Переходим на быстрое резервное чтение через fs...");
+    try {
+      yamlCode = fs.readFileSync(targetFilePath, "utf-8");
+      console.log("✅ Файл action.yml успешно прочитан через резервный fs!");
+    } catch (fsError) {
+      console.error("❌ Не удалось прочитать файл action.yml даже через fs:", fsError);
+      process.exit(1);
+    }
   }
 
-  // Получаем имя текущей ветки из переменных окружения GitHub Actions
   const branchName = process.env.GITHUB_REF_NAME || "динамическая ветка";
 
-  // 3. Формируем промпт для быстрой локальной модели
+  // 2. Формируем промпт для быстрой модели
   const prompt = `
 Ты — ведущий ИИ-архитектор безопасности и главный инспектор качества кода GitHub Actions.
 Перед тобой код Composite Action (файл action.yml). Проведи технический аудит.
@@ -71,25 +69,24 @@ async function run() {
 ## 🏁 Итоговое заключение
 Если критических багов нет, добавь в самый конец фразу "SUCCESS".
 
-КОД ФАЙЛА ДЛЯ СКАНИРОВАНИЯ:
+КОД ФАЙЛА ДЛЯ СКАНУИРОВАНИЯ:
 \`\`\`yaml
 ${yamlCode}
 \`\`\`
 `;
 
-  console.log("🤖 Отправляем запрос в Ollama (используем быструю qwen2.5-coder:1.5b-instruct)...");
+  console.log("🤖 Отправляем запрос в Ollama (qwen2.5-coder:1.5b-instruct)...");
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 300 * 1000);
 
-  // 4. Делаем запрос к локальному API Ollama
   try {
     const response = await fetch("http://127.0.0.1:11434/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        model: "qwen2.5-coder:1.5b-instruct", // Легкая и быстрая модель для CPU
+        model: "qwen2.5-coder:1.5b-instruct", 
         prompt: prompt,
         stream: false,
         options: {
@@ -112,7 +109,6 @@ ${yamlCode}
     console.log(aiVerdict);
     console.log("=======================================\n");
 
-    // 5. Записываем отчет в файл аналитики в корне репозитория
     const reportPath = path.join(workspaceDir, "analyzing-ai.md");
     fs.writeFileSync(reportPath, aiVerdict, "utf-8");
     console.log("💾 Отчет успешно сохранен в файл analyzing-ai.md");
@@ -120,7 +116,7 @@ ${yamlCode}
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
-      console.error("❌ Превышен лимит времени ожидания.");
+      console.error("❌ Превышен лимит времени ожидания Ollama.");
     } else {
       console.error("❌ Ошибка при общении с API Ollama:", error);
     }
