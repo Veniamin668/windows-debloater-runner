@@ -1,0 +1,74 @@
+name: Total Local Ollama + MCP Review (All Branches)
+
+on:
+  push:
+    # Убираем привязку к main/master. Теперь трекается абсолютно любой пуш в любую динамическую ветку!
+    branches:
+      - '**' 
+    paths:
+      - '**/action.yml' # Запускается, только если в пуше реально изменился или добавился экшен
+
+# Даем полные права на чтение кода и пуш обновленного отчета ИИ обратно в ветку
+permissions:
+  contents: write
+
+jobs:
+  ollama_universal_review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Скачиваем всю историю, чтобы гит не ругался при пуше в динамическую ветку
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Ollama Server
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Configure and Start Ollama
+        run: |
+          export OLLAMA_NUM_PARALLEL=1
+          ollama serve &
+          sleep 5
+          echo "Загружаем Qwen 2.5 Coder 7B Q8 на серверные мощности..."
+          ollama pull qwen2.5-coder:7b-instruct-q8_0
+
+      - name: Initialize Filesystem MCP Server Config
+        run: |
+          mkdir -p ~/.config/mcp
+          echo '{
+            "mcpServers": {
+              "filesystem": {
+                "command": "npx",
+                "args": ["-y", "@modelcontextprotocol/server-filesystem", "'$(pwd)'"]
+              }
+            }
+          }' > ~/.config/mcp/config.json
+
+      - name: Execute Heavy AI MCP Analysis
+        id: ai_review
+        run: |
+          npm install @modelcontextprotocol/sdk
+          node .github/scripts/ollama-mcp-review.js
+
+      # Финал: ИИ фиксирует отчет в файл analyzing-ai.md прямо внутри той динамической ветки, куда был пуш
+      - name: Commit and Push AI Analysis Report to Active Branch
+        if: always()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@://github.com"
+          
+          # Проверяем, изменился ли файл отчета ИИ по сравнению с предыдущим состоянием в этой ветке
+          if git diff --quiet analyzing-ai.md; then
+            echo "Новых багов или изменений в коде экшена не обнаружено. Отчет актуален."
+          else
+            git add analyzing-ai.md
+            # Флаг [skip ci] КРИТИЧЕСКИ ВАЖЕН — он запрещает гитхабу запускать этот же экшен повторно на коммит самого бота
+            git commit -m "chore: авто-обновление аналитики кода от ИИ в ветке ${ { github.ref_name } } [skip ci]"
+            git push origin HEAD:${{ github.ref }}
+          fi
