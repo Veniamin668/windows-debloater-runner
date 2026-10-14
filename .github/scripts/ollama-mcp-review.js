@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 
 async function run() {
-  console.log("🚀 Запуск ИИ-агента аналитики кода...");
+  console.log("🚀 Запуск ИИ-агента аналитики кода (Model: 7B)...");
 
   const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
   const targetFilePath = path.join(workspaceDir, "action.yml");
@@ -17,10 +17,8 @@ async function run() {
   }
 
   const branchName = process.env.GITHUB_REF_NAME || "dynamic-branch";
-  
-  // Генерируем красивую дату для уникальности файла отчета
   const now = new Date();
-  const dateStr = now.toISOString().split('T')[0]; // формат: YYYY-MM-DD
+  const dateStr = now.toISOString().split('T')[0]; // Формат: YYYY-MM-DD
 
   const prompt = `
 You are a senior AI security architect and code quality inspector for GitHub Actions.
@@ -78,10 +76,12 @@ ${yamlCode}
 \`\`\`
 `;
 
-  console.log("🤖 Отправляем запрос в Ollama (qwen2.5-coder:1.5b-instruct)...");
+  // Подключаем тяжелую модель qwen2.5-coder:7b-instruct
+  console.log("🤖 Отправляем запрос в Ollama (qwen2.5-coder:7b-instruct)...");
 
+  // Жесткий лимит в 15 минут (900 секунд)
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 900 * 1000); // 15 минут лимит
+  const timeoutId = setTimeout(() => controller.abort(), 900 * 1000);
 
   try {
     const response = await fetch("http://127.0.0.1:11434/api/generate", {
@@ -89,11 +89,11 @@ ${yamlCode}
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        model: "qwen2.5-coder:1.5b-instruct", 
+        model: "qwen2.5-coder:7b-instruct", 
         prompt: prompt,
         stream: false,
         options: {
-          num_ctx: 8192,
+          num_ctx: 4096, // Снизили контекст с 8k до 4k, чтобы 7B модель поместилась в RAM и считалась быстрее
           temperature: 0.1
         }
       })
@@ -108,17 +108,17 @@ ${yamlCode}
     const result = await response.json();
     const aiVerdict = result.response.trim();
 
-    console.log("\n====== [ВЕРДИКТ ЛОКАЛЬНОГО ИИ] ======");
+    console.log("\n====== [ВЕРДИКТ ЛОКАЛЬНОГО ИИ (7B)] ======");
     console.log(aiVerdict);
-    console.log("=======================================\n");
+    console.log("===========================================\n");
 
-    // Создаем папку ai-reports, если её еще нет
+    // Создаем папку ai-reports
     const reportsDir = path.join(workspaceDir, "ai-reports");
     if (!fs.existsSync(reportsDir)) {
       fs.mkdirSync(reportsDir, { recursive: true });
     }
 
-    // Путь к файлу внутри папки: ai-reports/audit-<ветка>-<дата>.md
+    // Сохраняем в файл: ai-reports/audit-<ветка>-<дата>.md
     const reportFileName = `audit-${branchName}-${dateStr}.md`;
     const reportPath = path.join(reportsDir, reportFileName);
     
