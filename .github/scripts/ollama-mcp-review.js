@@ -5,10 +5,11 @@ import fs from "fs";
 async function run() {
   console.log("🚀 Запуск ИИ-агента аналитики кода...");
 
-  // 1. Инициализируем транспорт до Filesystem MCP сервера
+  // 1. Инициализируем транспорт до Filesystem MCP сервера с увеличенным таймаутом (3 минуты)
   const transport = new StdioClientTransport({
     command: "npx",
-    args: ["-y", "@modelcontextprotocol/server-filesystem", process.cwd()]
+    args: ["-y", "@modelcontextprotocol/server-filesystem", process.cwd()],
+    timeout: 180000
   });
 
   const mcpClient = new Client({ name: "ollama-mcp-bridge", version: "1.0.0" });
@@ -60,7 +61,7 @@ async function run() {
 ## 🏁 Итоговое заключение
 Если критических багов нет и код идеален, обязательно добавь в самый конец фразу "SUCCESS". В противном случае опиши общие рекомендации по рефакторингу.
 
-КОД ФАЙЛА ДЛЯ СКАНiroВАНИЯ:
+КОД ФАЙЛА ДЛЯ СКАНИРОВАНИЯ:
 \`\`\`yaml
 ${yamlCode}
 \`\`\`
@@ -69,7 +70,7 @@ ${yamlCode}
   console.log("🤖 Отправляем тяжелый запрос в локальную Ollama (qwen2.5-coder:7b-instruct-q8_0)...");
   console.log("⏳ Максимальное время ожидания ответа установлено на 5 минут...");
 
-  // Создаем контроллер для установки таймаута на 5 минут (300000 мс)
+  // Создаем контроллер для установки таймаута на 5 минут (300000 мс) для запроса к Ollama
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 300 * 1000);
 
