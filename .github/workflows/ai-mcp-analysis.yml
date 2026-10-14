@@ -54,8 +54,12 @@ jobs:
       - name: Execute Heavy AI MCP Analysis
         id: ai_review
         run: |
-          npm install @modelcontextprotocol/sdk
-          node .github/scripts/ollama-mcp-review.js
+          # Устанавливаем SDK локально прямо на раннере
+          npm install @modelcontextprotocol/sdk @modelcontextprotocol/server-filesystem
+          
+          # Запускаем скрипт, явно передавая переменной окружения абсолютный путь к корню репозитория
+          REPO_PATH="$GITHUB_WORKSPACE" node .github/scripts/ollama-mcp-review.js
+
 
       # Финал: ИИ фиксирует отчет в файл analyzing-ai.md прямо внутри той динамической ветки, куда был пуш
       - name: Commit and Push AI Analysis Report to Active Branch
