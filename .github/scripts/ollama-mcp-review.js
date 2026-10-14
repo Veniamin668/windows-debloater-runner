@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 
 async function run() {
-  console.log("🚀 Запуск ИИ-агента аналитики кода (Model: 7B)...");
+  console.log("🚀 Запуск ИИ-агента аналитики кода (Model: 7B + Beautified Report)...");
 
   const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
   const targetFilePath = path.join(workspaceDir, "action.yml");
@@ -17,52 +17,80 @@ async function run() {
   }
 
   const branchName = process.env.GITHUB_REF_NAME || "dynamic-branch";
+  
+  // Генерируем красивую дату и время с учетом Екатеринбурга (UTC+5) и UTC
   const now = new Date();
-  const dateStr = now.toISOString().split('T')[0]; // Формат: YYYY-MM-DD
+  
+  const optionsEkb = { timeZone: 'Asia/Yekaterinburg', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+  const timeEkb = new Intl.DateTimeFormat('ru-RU', optionsEkb).format(now); // формат: DD.MM.YYYY, HH:mm:ss
+  
+  const optionsUtc = { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+  const timeUtc = new Intl.DateTimeFormat('ru-RU', optionsUtc).format(now);
+  
+  const dateFileStr = now.toISOString().split('T')[0]; // YYYY-MM-DD для имени файла
 
   const prompt = `
 You are a senior AI security architect and code quality inspector for GitHub Actions.
 Analyze the provided Composite Action code (action.yml) strictly.
 
-CRITICAL RULE: DO NOT copy the source code of action.yml into your response. Only provide technical analysis, tables, and conclusions!
+CRITICAL RULE: DO NOT copy the source code of action.yml into your response. 
+Structure your report cleanly using rich Markdown, callout blocks (> [!NOTE]), tables, and emojis to make it look professional.
 
-Structure your report in Markdown using the exact sections below:
+Use the exact sections below:
 
-# 🕵️‍♂️ Automated AI Code Audit (Branch: ${branchName} | Date: ${dateStr})
+# 🕵️‍♂️ Automated AI Code Audit & Security Report
 
-## 📊 Criticality Summary Table
-| Threat Level | Count | Description |
+> **📊 Meta Information:**
+> - **Branch:** \`${branchName}\`
+> - **Time (EKB, UTC+5):** \`${timeEkb}\`
+> - **Time (UTC):** \`${timeUtc}\`
+> - **Engine:** \`qwen2.5-coder:7b-instruct\`
+
+## 📌 Executive Summary
+Brief overview of what this configuration does and its architectural purpose.
+
+## 📊 Criticality & Metrics Table
+| Threat Level | Status / Count | Description & Impact |
 | :--- | :--- | :--- |
-| 🔴 Critical Bug | [Estimate count & details] | Logic broken, action will fail |
-| 🟡 Medium Vulnerability | [Estimate count & details] | Potential Script Injection via contexts |
-| 🟢 Optimization | [Estimate count & details] | Redundant steps |
+| 🔴 Critical Bug | [Count & Details] | Logic broken, action will fail |
+| 🟡 Medium Vulnerability | [Count & Details] | Potential script injection or unsafe context usage |
+| 🟢 Optimization | [Count & Details] | Redundant steps or performance tips |
 
-## 🔍 Detailed Breakdown of Issues
-- **Step [Name]:** Description of the issue and remediation recommendations.
+## 🔍 Detailed Breakdown of Steps
+- **Step Name:** Analysis of logic, potential edge cases, and recommendations.
 
 ## 🛡️ Security Check
-Security verdict on 'run:' blocks.
+Verdict on 'run:' execution blocks and environment safety.
 
 ## 🏁 Final Conclusion
-If there are no critical bugs, add the word "SUCCESS" at the very end.
+SUCCESS (or warning if issues found).
 
 ---
 
 # 🇷🇺 РУССКАЯ ВЕРСИЯ ОТЧЕТА (Russian Translation)
 
-Переведи весь предыдущий аналитический отчет на русский язык, сохранив структуру разделов, таблицы и вердикт:
+Переведи весь предыдущий аналитический отчет на русский язык, сохранив красивое оформление, таблицы и блоки:
 
-# 🕵️‍♂️ Автоматический ИИ-Аудит Кода (Ветка: ${branchName} | Дата: ${dateStr})
+# 🕵️‍♂️ Автоматический ИИ-Аудит Кода и Безопасности
 
-## 📊 Сводная таблица критичности
-| Уровень угрозы | Количество | Описание |
+> **📊 Мета-информация:**
+> - **Ветка:** \`${branchName}\`
+> - **Время (ЕКБ, UTC+5):** \`${timeEkb}\`
+> - **Время (UTC):** \`${timeUtc}\`
+> - **Движок:** \`qwen2.5-coder:7b-instruct\`
+
+## 📌 Краткая сводка
+Обзор назначения файла и его архитектуры.
+
+## 📊 Таблица критичности и метрик
+| Уровень угрозы | Статус / Количество | Описание и влияние |
 | :--- | :--- | :--- |
 | 🔴 Критический баг | [Оценка и детали] | Логика сломана, экшен упадет |
 | 🟡 Средняя уязвимость | [Оценка и детали] | Потенциальный Script Injection через контексты |
 | 🟢 Оптимизация | [Оценка и детали] | Избыточные шаги |
 
-## 🔍 Детальный разбор проблемных мест
-- **Шаг [Название]:** Описание проблемы и рекомендации по исправлению.
+## 🔍 Детальный разбор шагов
+- **Название шага:** Анализ логики, краевых случаев и рекомендации.
 
 ## 🛡️ Безопасность (Security Check)
 Вердикт безопасности по блокам 'run:'.
@@ -76,12 +104,10 @@ ${yamlCode}
 \`\`\`
 `;
 
-  // Подключаем тяжелую модель qwen2.5-coder:7b-instruct
   console.log("🤖 Отправляем запрос в Ollama (qwen2.5-coder:7b-instruct)...");
 
-  // Жесткий лимит в 15 минут (900 секунд)
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 900 * 1000);
+  const timeoutId = setTimeout(() => controller.abort(), 900 * 1000); // 15 минут лимит
 
   try {
     const response = await fetch("http://127.0.0.1:11434/api/generate", {
@@ -93,7 +119,7 @@ ${yamlCode}
         prompt: prompt,
         stream: false,
         options: {
-          num_ctx: 4096, // Снизили контекст с 8k до 4k, чтобы 7B модель поместилась в RAM и считалась быстрее
+          num_ctx: 4096,
           temperature: 0.1
         }
       })
@@ -112,14 +138,13 @@ ${yamlCode}
     console.log(aiVerdict);
     console.log("===========================================\n");
 
-    // Создаем папку ai-reports
     const reportsDir = path.join(workspaceDir, "ai-reports");
     if (!fs.existsSync(reportsDir)) {
       fs.mkdirSync(reportsDir, { recursive: true });
     }
 
-    // Сохраняем в файл: ai-reports/audit-<ветка>-<дата>.md
-    const reportFileName = `audit-${branchName}-${dateStr}.md`;
+    // Имя файла: audit-<ветка>-<дата>.md
+    const reportFileName = `audit-${branchName}-${dateFileStr}.md`;
     const reportPath = path.join(reportsDir, reportFileName);
     
     fs.writeFileSync(reportPath, aiVerdict, "utf-8");
