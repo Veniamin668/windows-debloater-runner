@@ -65,7 +65,7 @@ inputs:
   install-zen:
     description: 'Install Zen Browser?'
     required: false
-    default: 'true'
+    default: 'false'
     
 runs:
   using: composite
