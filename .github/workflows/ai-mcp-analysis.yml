@@ -65,16 +65,18 @@ jobs:
           # Запускаем скрипт, явно передавая переменной окружения абсолютный путь к корню репозитория
           REPO_PATH="$GITHUB_WORKSPACE" node .github/scripts/ollama-mcp-review.js
 
-      - name: Commit and Push AI Analysis Report to Active Branch
+      - name: Commit and Push AI Reports to Active Branch
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              
+          # Добавляем всю папку с отчетами
+          git add ai-reports/
           
-          if git diff --quiet analyzing-ai.md; then
-            echo "No changes detected in AI report. Skipping commit."
+          # Проверяем, есть ли что коммитить (если изменений нет, git diff по индексу спасет)
+          if git diff --cached --quiet; then
+            echo "No changes detected in ai-reports/. Skipping commit."
           else
-            git add analyzing-ai.md
-            git commit -m "chore: auto-update AI code analysis report (${{ github.ref_name }}) [skip ci]"
-            git push origin HEAD:${{ github.ref_name }}
-            fi
-    
+          git commit -m "chore: add AI analysis report for branch '${{ github.ref_name }}' [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
+          fi
