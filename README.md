@@ -128,6 +128,15 @@ Set enable to 'false' to disable the cleanup
 
 ```wsl-rename``` rename the wsl.exe file by appending "123" to the extension, thereby preventing the WSL update prompt on ARM-based runners
 
+### 📊 Debloat Results (Before / After Comparison)
+
+| 🗂️ Component / Description | 🪟 Windows Server 2022 | 🪟 Windows Server 2025 | 🪟 Windows 11 ARM64 |
+| :--- | :--- | :--- | :--- |
+| **📁 C: Drive / Folders**<br>*(File structure and disk state)* | <details open><summary>Before</summary><br><img src="screenshots/BEFORE2022FOLDERS.png" width="400"></details><br><details open><summary>After</summary><br><img src="screenshots/FOLDERSAFTER2022.png" width="400"></details> | <details open><summary>Before</summary><br><img src="screenshots/foldersbefore2025.png" width="400"></details><br><details open><summary>After</summary><br><img src="screenshots/AFTER-C-Folder2025.png" width="400"></details> | <details open><summary>Before</summary><br><img src="screenshots/FOLDERSBEFOREARM.png" width="400"></details><br><details open><summary>After</summary><br><img src="screenshots/FOLDERARM64.png" width="400"></details> |
+| **📦 Installed Apps**<br>*(List of applications before & after cleanup)* | <details open><summary>Before</summary><br><img src="screenshots/BEFOREAPPS2022.png" width="400"></details><br><details open><summary>After</summary><br><img src="screenshots/APPSAFTER2022.png" width="400"></details> | <details open><summary>Before</summary><br><img src="screenshots/APPSBEFORE2025.png" width="400"></details><br><details open><summary>After</summary><br><img src="screenshots/AFTERinstapps2025.png" width="400"></details> | <details open><summary>Before</summary><br><img src="screenshots/APPSBEFOREARM.png" width="400"></details><br><details open><summary>After</summary><br><img src="screenshots/APPSAFTERARM.png" width="400"></details> |
+| **🖥️ Desktop / General View**<br>*(Overall state and desktop preview)* | <details open><summary>Before</summary><br><img src="screenshots/BEFORE2022.png" width="400"></details><br><details open><summary>After</summary><br><img src="screenshots/AFTER2022.png" width="400"></details> | <details open><summary>Before</summary><br><img src="screenshots/BEFORE2025.png" width="400"></details><br><details open><summary>After</summary><br><img src="screenshots/after2025.png" width="400"></details> | <details open><summary>After</summary><br><img src="screenshots/AFTERARM64.png" width="400"></details> |
+| **📉 Telemetry**<br>*(OOBE privacy screen bypass)* | — | — | <details open><summary>📸 View</summary><br><img src="screenshots/TELEMETRY!!!.png" width="400"><br><small>Default OOBE privacy settings screen (shown when <code>oobe-disable: 'false'</code>), which gets bypassed when set to <code>'true'</code>.</small></details> |
+
 How it works
 
 The action:
