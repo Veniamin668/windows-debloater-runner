@@ -10,7 +10,7 @@ const customAgent = new Agent({
 });
 
 async function run() {
-  console.log("🚀 Запуск ИИ-агента (32B Model + Strict System Prompt)...");
+  console.log("🚀 Запуск ИИ-агента (14B Model + Strict System Prompt)...");
 
   const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
   const targetFilePath = path.join(workspaceDir, "action.yml");
@@ -43,7 +43,7 @@ async function run() {
   const dateTimeFileStr = `${partMap.year}-${partMap.month}-${partMap.day}_${partMap.hour}-${partMap.minute}`;
 
   // МЕНЯЕМ НА 32B МОДЕЛЬ
-  const modelName = "qwen2.5-coder:32b-instruct";
+  const modelName = "qwen2.5-coder:14b-instruct";
 
   // --- 1. ПРОМПТ EN ---
   const promptEN = `
