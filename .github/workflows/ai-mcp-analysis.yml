@@ -27,15 +27,15 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 🔧 Setup 8GB Swap for 32B Model
-        run: |
-          echo "🚀 Выделяем 8GB Swap..."
-          sudo swapoff -a || true
-          sudo fallocate -l 8G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=8192
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
-          free -h
+#      - name: 🔧 Setup 8GB Swap for 32B Model
+#        run: |
+#          echo "🚀 Выделяем 8GB Swap..."
+#          sudo swapoff -a || true
+#          sudo fallocate -l 8G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=8192
+#         sudo chmod 600 /swapfile
+#          sudo mkswap /swapfile
+#          sudo swapon /swapfile
+#          free -h
         
       - name: Install Ollama Server
         run: |
@@ -51,8 +51,8 @@ jobs:
           sleep 2
           ollama serve &
           sleep 5
-          echo "Загружаем Qwen 2.5 Coder 32B на серверные мощности..."
-          ollama pull qwen2.5-coder:32b-instruct
+          echo "Загружаем Qwen 2.5 Coder 14B на серверные мощности..."
+          ollama pull qwen2.5-coder:14b-instruct
 
       - name: Initialize Filesystem MCP Server Config
         run: |
